@@ -1,0 +1,3 @@
+pushd /home/pi/sentry
+nohup python3 -u create_snapshot.py cont & disown
+popd
