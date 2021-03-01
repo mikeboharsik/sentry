@@ -191,12 +191,12 @@ def snapshots(camera, continuous = False, name = "temp", baseSum = -1):
     frame.truncate()    
     
     if not continuous or save:
-      imgname = "{0}.jpg".format(name)
+      imgname = f"{name}.jpg"
       
       if name == "temp":
         final = f"{pathSnapshots}/{datetime.datetime.utcnow().strftime('%Y-%m-%dZ%H-%M-%S-%f.jpg')}"
       else:
-        final = f"{pathSnapshots}/{imgname}"
+        final = f"./{imgname}"
       
       f = open(final, 'wb')
       try:

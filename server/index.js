@@ -1,5 +1,6 @@
 const express = require('express');
 const fs = require('fs');
+const path = require('path');
 const { exec } = require('child_process');
 const cron = require('cron').CronJob;
 const http = require('http');
@@ -10,12 +11,13 @@ const io = require('socket.io')(httpServer, {});
 
 const port = 13370;
 
-const pathBase = '../base.jpg';
-const pathConfig = '../config.json';
-const pathClient = './client';
+const pathSnapshotGeneration = '../snapshot_gen';
+const pathBase = `${pathSnapshotGeneration}/base.jpg`;
+const pathConfig = `${pathSnapshotGeneration}/config.json`;
+const pathSnapshots = `${pathSnapshotGeneration}/snapshots`;
+const pathSnapshotsLog = `${pathSnapshotGeneration}/nohup.out`;
+const pathClient = '../client';
 const pathClientBuild = `${pathClient}/build`;
-const pathSnapshots = '../snapshots';
-const pathSnapshotsLog = '../nohup.out';
 const pathServerLog = './nohup.out';
 
 function log(msg) {
@@ -33,7 +35,7 @@ function readDirAsync(dir) {
 }
 
 async function getFileNames() {
-  return await readDirAsync('../snapshots')
+  return await readDirAsync(pathSnapshots)
     .then(files => files.sort((a, b) => a < b ? 1 : a > b ? -1 : 0));
 }
 
@@ -90,12 +92,12 @@ app.use((req, res, next) => {
 });
 
 app.get('/api/snapshots/base', (req, res) => {
-	res.sendFile(pathBase);
+	res.sendFile(path.join(__dirname, pathBase));
 });
 
 app.get('/api/snapshots/log', (req, res) => {
   res.set('Content-Type', 'text/plain');
-	res.sendFile(pathSnapshotsLog);
+	res.sendFile(path.join(__dirname, pathSnapshotsLog));
 });
 
 app.get('/api/snapshots/:idx', async (req, res) => {
@@ -123,7 +125,7 @@ app.get('/api/snapshots/:idx', async (req, res) => {
       }
     );
   } else {
-    res.sendFile(`${pathSnapshots}/${fileName}`);
+    res.sendFile(path.join(__dirname, `${pathSnapshots}/${fileName}`));
   }
 });
 
@@ -155,7 +157,7 @@ app.delete('/api/snapshots/:idx', async (req, res) => {
 
 app.get('/api/server/log', (req, res) => {
   res.set('Content-Type', 'text/plain');
-	res.sendFile(pathServerLog);
+	res.sendFile(path.join(__dirname, pathServerLog));
 });
 
 app.get('/api/config*', (req, res) => {
