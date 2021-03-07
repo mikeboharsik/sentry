@@ -5,6 +5,7 @@ import json
 import numpy
 import os
 import picamera
+import shutil
 import sys
 import time
 
@@ -166,6 +167,9 @@ def benchmark(func, desc = None):
 
   log(out)
 
+def currentTimeFileName():
+  return datetime.datetime.utcnow().strftime('%Y-%m-%dZ%H-%M-%S-%f.jpg')
+
 def snapshots(camera, continuous = False, name = "temp", baseSum = -1):
   global pathSnapshots
 
@@ -194,7 +198,7 @@ def snapshots(camera, continuous = False, name = "temp", baseSum = -1):
       imgname = f"{name}.jpg"
       
       if name == "temp":
-        final = f"{pathSnapshots}/{datetime.datetime.utcnow().strftime('%Y-%m-%dZ%H-%M-%S-%f.jpg')}"
+        final = f"{pathSnapshots}/{currentTimeFileName()}"
       else:
         final = f"./{imgname}"
       
@@ -216,6 +220,13 @@ def snapshots(camera, continuous = False, name = "temp", baseSum = -1):
 def main():
   global baseSum, continuous, pathBase, res, crop
 
+  if (not os.path.isdir(pathSnapshots)):
+    os.mkdir(pathSnapshots)
+    log(f"Created '{pathSnapshots}'")
+
+  if (not os.path.isfile(pathBase)):
+    baseImageMissing = True
+
   processArguments()
   processConfig()
 
@@ -225,7 +236,7 @@ def main():
     if reassure:
       log("Camera initalized")
       reassure = False
-  
+
     try:
       camera.resolution = res
       camera.rotation = 90
@@ -239,6 +250,11 @@ def main():
       camera.awb_mode = 'off'
       camera.awb_gains = g
       camera.start_preview()
+
+      if (baseImageMissing):
+        snapshots(camera, name = "base")
+        shutil.copyfile(pathBase, f"{pathSnapshots}/{currentTimeFileName()}")
+        log(f"Initiated base image and copied into '{pathSnapshots}'")
       
       try:
         baseSum = imgsum(cv2.imread(pathBase, cv2.IMREAD_COLOR))

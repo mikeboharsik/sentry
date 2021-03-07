@@ -1,10 +1,10 @@
 {
   "decimationX": 8,
   "decimationY": 8,
-  "lastBaseSum": 1757765,
-  "lastCaptureDelta": "0:00:00.283242",
-  "lastRead": "2021-03-01 18:26:12.502234",
-  "lastSumDelta": "0:00:00.162773",
+  "lastBaseSum": 0,
+  "lastCaptureDelta": "0:00:00.000000",
+  "lastRead": "1970-01-01 00:00:00.000000",
+  "lastSumDelta": "0:00:00.00000",
   "requestProcessingIntervalSeconds": 5,
   "requests": {
     "updateBase": false
