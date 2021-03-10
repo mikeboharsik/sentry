@@ -30,6 +30,7 @@ function App() {
   const [imgName, setImgName] = useState(undefined);
   const [cont, setCont] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [config, setConfig] = useState(null);
   
   async function getImage() {
     await fetch(`api/snapshots/${index}`, { headers: { 'Content-Type': 'application/json' } })
@@ -62,13 +63,23 @@ function App() {
   async function deleteImage() {
     await fetch(`api/snapshots/${index}`, { method: 'DELETE' })
       .then(res => {
-        if (!res.ok)
-          throw new Error("Response is not OK");
+        if (!res.ok) throw new Error("Response is not OK");
       })
+      .catch(e => console.error(e));
+  }
+
+  async function getConfig() {
+    await fetch('api/config')
+      .then(res => {
+        if (!res.ok) throw new Error("Response is not OK");
+        return res.json();
+      })
+      .then(json => setConfig(json))
       .catch(e => console.error(e));
   }
   
   const getImageRef = useFreshRef(getImage);
+  const getConfigRef = useFreshRef(getConfig);
   
   useEffect(() => {
     cont?.focus();
@@ -94,10 +105,12 @@ function App() {
   useEffect(() => {
     if (index >= 0) {
       getImageRef.current();
+
+      getConfig();
     } else {
       setIndex(0);
     }
-  }, [getImageRef, index]);
+  }, [getConfigRef, getImageRef, index]);
   
   if (img === undefined) {
     return null;
@@ -157,6 +170,7 @@ function App() {
       </div>
     ) : null;
 
+    const lastReadContent = config ? `Last read: ${config.lastRead}` : '';
     
     middle = (
       <div style={{ width: imgWidth, height: imgHeight }}>
@@ -178,6 +192,7 @@ function App() {
           {imgName}
         </div>
         {deleteButton}
+        <div style={{ color: '#aaa' }}>{lastReadContent}</div>
       </div>
     );
   } else {
