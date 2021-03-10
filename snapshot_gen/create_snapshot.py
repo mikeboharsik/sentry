@@ -224,6 +224,7 @@ def main():
     os.mkdir(pathSnapshots)
     log(f"Created '{pathSnapshots}'")
 
+  baseImageMissing = False
   if (not os.path.isfile(pathBase)):
     baseImageMissing = True
 
