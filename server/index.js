@@ -9,6 +9,9 @@ const app = express();
 const httpServer = http.createServer(app);
 const io = require('socket.io')(httpServer, {});
 
+const { PASSWORD } = JSON.parse(fs.readFileSync('./config.json'));
+process.env.PASSWORD = PASSWORD;
+
 const port = 13370;
 
 const pathSnapshotGeneration = '../snapshot_gen';
@@ -55,8 +58,6 @@ function rawBody(req, res, next) {
 
 app.use(rawBody);
 
-app.use(express.static(pathClient));
-
 app.use((req, res, next) => {
   log(`${req.ip} -> ${req.method} ${req.originalUrl}`);
   
@@ -66,7 +67,7 @@ app.use((req, res, next) => {
 });
 
 app.use((req, res, next) => {
-  const { ip, method } = req;
+  const { ip, method, query } = req;
   
   const isClientLocal = ip.match(/192\.168\.1/);
   
@@ -75,7 +76,18 @@ app.use((req, res, next) => {
     res.set('Access-Control-Allow-Headers', '*');
     res.set('Access-Control-Allow-Origin', '*');
     req.isAuthenticated = true;
-  };
+  } else {
+    if (query) {
+      console.log('pass', process.env.PASSWORD);
+      if (!query.pass || query.pass !== process.env.PASSWORD) {
+        return res.status(404).send();
+      }
+
+      req.isAuthenticated = true;
+    } else {
+      return res.status(404).send();
+    }
+  }
   
   switch(method.toUpperCase()) {
     case 'POST':
@@ -84,13 +96,15 @@ app.use((req, res, next) => {
       if (isClientLocal) {
         next();
       } else {
-        res.status(404).send();
+        return res.status(404).send();
       }
       break;
     default:
       next();
   }
 });
+
+app.use(express.static(pathClient));
 
 app.get('/api/snapshots/base', (req, res) => {
 	res.sendFile(path.join(__dirname, pathBase));
@@ -130,9 +144,7 @@ app.get('/api/snapshots/:idx', async (req, res) => {
   }
 });
 
-app.delete('/api/snapshots/:idx', async (req, res) => {
-  if (!req.isAuthenticated) return res.status(404).send();
-  
+app.delete('/api/snapshots/:idx', async (req, res) => {  
   let { idx } = req.params;
   
   const contentType = req.get('Content-Type');
@@ -323,7 +335,7 @@ io.on('connection', socket => {
   sockets.push(socket);
   
   socket.on('disconnecting', reason => {
-    log(`disconnecting: ${reason}`);
+    log(`${socket.id} disconnecting: ${reason}`);
   });
 });
 

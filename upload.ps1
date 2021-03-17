@@ -23,9 +23,11 @@ try {
     Pop-Location
   }
   
-  Copy-Item -Path "$PSScriptRoot\client\build\**" -Recurse -Destination "$uploadDir\client"
+  Copy-Item -Path "$PSScriptRoot\client\gulp-build\index.html" -Recurse -Destination "$uploadDir\client"
 
   Copy-Item -Path "$PSScriptRoot\server\*.js*" -Recurse -Container:$false -Destination "$uploadDir\server"
+  Copy-Item -Path "$PSScriptRoot\server\.env*" -Recurse -Container:$false -Destination "$uploadDir\server"
+
   Copy-Item -Path "$PSScriptRoot\snapshot_gen" -Recurse -Container:$false "$uploadDir\snapshot_gen"
 
   $utilFiles = 'config.json', 'init.sh', 'ksnp', 'ksrv', 'snp', 'srv'
