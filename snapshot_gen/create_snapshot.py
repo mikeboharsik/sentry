@@ -17,7 +17,7 @@ w = int(1920)
 h = int(1080)
 res = (w, h)
 
-crop = (0.2, 0.255, 0.7, 0.4)
+crop = (0.185, 0.3625, 0.7, 0.4)
 outWidth = int(res[0] * crop[3])
 outHeight = int(res[1] * crop[2])
 outSize = (outWidth, outHeight)
