@@ -9,9 +9,9 @@ import shutil
 import sys
 import time
 
-pathSnapshots = './snapshots'
+pathSnapshots = '../../snapshots'
 pathBase = './base.jpg'
-pathConfig = './config.json'
+pathConfig = '../config.json'
 
 w = int(1920)
 h = int(1080)
@@ -95,6 +95,10 @@ def processConfig(streambytes = None, sum = 0, captureDelta = datetime.timedelta
       f.close()
       f = None
       
+    if config == None:
+      log(f"Failed to load '{pathConfig}'")
+      return
+
     config["lastRead"] = str(datetime.datetime.utcnow())
     config["lastCaptureDelta"] = str(captureDelta)
     config["lastSumDelta"] = str(sumDelta)

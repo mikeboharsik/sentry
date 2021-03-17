@@ -7,5 +7,12 @@
     "cron": "^1.8.2",
     "express": "^4.17.1",
     "socket.io": "^3.0.5"
+  },
+  "devDependencies": {
+    "pkg": "^4.4.9"
+  },
+  "scripts": {
+    "build-linux": "pkg index.js --target node10-linux-armv6 --output bin-linux/server",
+    "build-win": "pkg index.js --target win --output bin-win/server.exe"
   }
 }

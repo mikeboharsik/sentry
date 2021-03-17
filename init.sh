@@ -1,10 +1,5 @@
 #!/bin/bash
 
-pushd client;
-yarn;
-yarn build;
-popd;
-
 pushd server;
 yarn;
 popd;

@@ -13,11 +13,10 @@ const port = 13370;
 
 const pathSnapshotGeneration = '../snapshot_gen';
 const pathBase = `${pathSnapshotGeneration}/base.jpg`;
-const pathConfig = `${pathSnapshotGeneration}/config.json`;
-const pathSnapshots = `${pathSnapshotGeneration}/snapshots`;
+const pathConfig = '../config.json';
+const pathSnapshots = '../../snapshots';
 const pathSnapshotsLog = `${pathSnapshotGeneration}/nohup.out`;
 const pathClient = '../client';
-const pathClientBuild = `${pathClient}/build`;
 const pathServerLog = './nohup.out';
 
 function log(msg) {
@@ -48,7 +47,7 @@ function rawBody(req, res, next) {
     req.rawBody += chunk;
   });
   req.on('end', function(){
-    try { req.body = JSON.parse(req.rawBody) } catch(e) { console.error(e) }
+    try { if(req.rawBody) req.body = JSON.parse(req.rawBody) } catch(e) { console.error(e) }
     
     next();
   });
@@ -56,7 +55,7 @@ function rawBody(req, res, next) {
 
 app.use(rawBody);
 
-app.use(express.static(pathClientBuild));
+app.use(express.static(pathClient));
 
 app.use((req, res, next) => {
   log(`${req.ip} -> ${req.method} ${req.originalUrl}`);
@@ -73,6 +72,8 @@ app.use((req, res, next) => {
   
   if (isClientLocal) { 
     res.set('X-Authenticated', 'true')
+    res.set('Access-Control-Allow-Headers', '*');
+    res.set('Access-Control-Allow-Origin', '*');
     req.isAuthenticated = true;
   };
   

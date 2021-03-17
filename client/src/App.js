@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import socketIOClient from "socket.io-client";
 
+import { getUri } from './util/getUri';
+
 const imgWidth = 768;
 const imgHeight = 756;
 
@@ -33,7 +35,7 @@ function App() {
   const [config, setConfig] = useState(null);
   
   async function getImage() {
-    await fetch(`api/snapshots/${index}`, { headers: { 'Content-Type': 'application/json' } })
+    await fetch(getUri(`/api/snapshots/${index}`), { headers: { 'Content-Type': 'application/json' } })
       .then(res => { if (!res.ok) { throw new Error("Response is not OK"); } else { return res; } })
       .then(res => { 
         const { headers } = res;
@@ -61,7 +63,7 @@ function App() {
   };
   
   async function deleteImage() {
-    await fetch(`api/snapshots/${index}`, { method: 'DELETE' })
+    await fetch(getUri(`/api/snapshots/${index}`), { method: 'DELETE' })
       .then(res => {
         if (!res.ok) throw new Error("Response is not OK");
       })
@@ -69,7 +71,7 @@ function App() {
   }
 
   async function getConfig() {
-    await fetch('api/config')
+    await fetch(getUri('/api/config'))
       .then(res => {
         if (!res.ok) throw new Error("Response is not OK");
         return res.json();
