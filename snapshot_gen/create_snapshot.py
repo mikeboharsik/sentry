@@ -8,147 +8,56 @@ import picamera
 import shutil
 import sys
 import time
+import traceback
 
-pathSnapshots = '../../snapshots'
-pathBase = './base.jpg'
+# local
+import config
+from log import log
+
 pathConfig = '../config.json'
 
-w = int(1920)
-h = int(1080)
-res = (w, h)
-
-crop = (0.185, 0.3625, 0.7, 0.4)
-outWidth = int(res[0] * crop[3])
-outHeight = int(res[1] * crop[2])
-outSize = (outWidth, outHeight)
-
-decimationX = 12
-decimationY = 12
-
-baseSum = 0
-tolerance = 0.05
-quality = 100
-
-continuous = False
-rapid = False
-updateBase = False
-burst = False
-
 lastRequestProcessingTime = None
-requestProcessingIntervalSeconds = 5
-
-def log(msg):
-  dt = str(datetime.datetime.utcnow()).replace(' ', 'T')
-  print(f"{dt}Z {msg}")
-
-samplesX = int(outWidth / decimationX)
-samplesY = int(outHeight / decimationY)
-
-log(f"Decimation settings result in {samplesX} X samples and {samplesY} Y samples ({samplesX * samplesY} total)")
-log(f"Reading {pathConfig} at a rate of {requestProcessingIntervalSeconds} seconds")
 
 def processArguments():
-  global continuous, rapid, updateBase, burst
+  burst = False
+  continuous = False
+  rapid = False
+  updateBase = False
 
   try:
     if sys.argv.index('cont') >= 0:
       continuous = True
   except:
     pass
-  log(f"Continuous mode: {continuous!r}")
 
   try:
     if sys.argv.index('rapid') >= 0:
       rapid = True
   except:
     pass
-  log(f"Rapid mode: {rapid!r}")
 
   try:
     if sys.argv.index('base') >= 0:
       updateBase = True
   except:
     pass
-  log(f"Update base: {updateBase!r}")
 
   try:
     if sys.argv.index('burst') >= 0:
       burst = True
   except:
     pass
-  log(f"Burst: {burst!r}")
 
-def processConfig(streambytes = None, sum = 0, captureDelta = datetime.timedelta(0), sumDelta = datetime.timedelta(0)):
-  global baseSum, decimationX, decimationY, lastRequestProcessingTime, pathBase, pathConfig, requestProcessingIntervalSeconds, tolerance
+  return {
+    'burst': burst,
+    'continuous': continuous,
+    'rapid': rapid,
+    'updateBase': updateBase,
+  }
 
-  delta = datetime.timedelta(0)
-
-  if lastRequestProcessingTime:
-    delta = datetime.datetime.utcnow() - lastRequestProcessingTime
-    
-  if not lastRequestProcessingTime or delta.seconds >= requestProcessingIntervalSeconds:
-    config = None
-    f = open(pathConfig)  
-    try:
-      config = json.loads(f.read())
-    finally:
-      f.close()
-      f = None
-      
-    if config == None:
-      log(f"Failed to load '{pathConfig}'")
-      return
-
-    config["lastRead"] = str(datetime.datetime.utcnow())
-    config["lastCaptureDelta"] = str(captureDelta)
-    config["lastSumDelta"] = str(sumDelta)
-    
-    if config["lastBaseSum"] != baseSum and baseSum != 0:
-      lastBaseSumBefore = config["lastBaseSum"]
-      config["lastBaseSum"] = int(baseSum)
-      log(f"Updated lastBaseSum from {lastBaseSumBefore} to {config['lastBaseSum']}")
-    
-    if config["decimationX"] != decimationX:
-      decimationXBefore = decimationX
-      decimationX = config["decimationX"]
-      log(f"Updated decimationX from {decimationXBefore} to {decimationX}")
-      
-    if config["decimationY"] != decimationY:
-      decimationYBefore = decimationY
-      decimationY = config["decimationY"]
-      log(f"Updated decimationY from {decimationYBefore} to {decimationY}")
-    
-    if config["requestProcessingIntervalSeconds"] != requestProcessingIntervalSeconds:
-      requestProcessingIntervalSecondsBefore = requestProcessingIntervalSeconds
-      requestProcessingIntervalSeconds = config["requestProcessingIntervalSeconds"]
-      log(f"Updated requestProcessingIntervalSeconds from {requestProcessingIntervalSecondsBefore} to {requestProcessingIntervalSeconds}")
-      
-    if config["tolerance"] != tolerance:
-      toleranceBefore = tolerance
-      tolerance = config["tolerance"]
-      log(f"Updated tolerance from {toleranceBefore} to {tolerance}")
-    
-    requests = config["requests"]
-    if requests["updateBase"] and streambytes:
-      f = open(pathBase, 'wb')
-      try:
-        f.write(streambytes)
-      finally:
-        f.close()
-      requests["updateBase"] = False
-      baseSum = sum
-      log(f"Updated {pathBase} and set baseSum to {baseSum}")
-      
-    f = open(pathConfig, 'w')
-    try:
-      f.write(json.dumps(config, indent = 2, sort_keys = True))
-    finally:
-      f.close()
-      
-    lastRequestProcessingTime = datetime.datetime.utcnow()
-
-def imgsum(img):
-  global decimationX, decimationY
+def imgsum(img, config):
+  decimationX = config['decimationX']
+  decimationY = config['decimationY']
 
   sum = 0
   for i in range(len(img)):
@@ -174,11 +83,19 @@ def benchmark(func, desc = None):
 def currentTimeFileName():
   return datetime.datetime.utcnow().strftime('%Y-%m-%dZ%H-%M-%S-%f.jpg')
 
-def snapshots(camera, continuous = False, name = "temp", baseSum = -1):
-  global pathSnapshots
+def snapshots(pathSnapshots, camera, continuous = False, name = "temp", baseSum = -1, arguments = {}, configuration = {}):
+  burst = arguments['burst']
+  continuous = arguments['continuous']
+  rapid = arguments['rapid']
+
+  outSize = (configuration['outputWidth'], configuration['outputHeight'])
+  pathSnapshots = configuration['pathSnapshots']
+  quality = configuration['quality']
+  tolerance = configuration['tolerance']
 
   capture_start = datetime.datetime.utcnow()
   stream = io.BytesIO()
+
   for frame in camera.capture_continuous(stream, format='jpeg', resize = outSize, quality = quality, use_video_port = rapid, burst = burst):
     frame.seek(0)
     streambytes = frame.read()
@@ -189,7 +106,7 @@ def snapshots(camera, continuous = False, name = "temp", baseSum = -1):
     sum_start = datetime.datetime.utcnow()
     bytes = numpy.asarray(bytearray(streambytes), numpy.uint8)
     img = cv2.imdecode(bytes, cv2.IMREAD_COLOR)
-    sum = imgsum(img)
+    sum = imgsum(img, configuration)
     sum_end = datetime.datetime.utcnow()
     
     diff = abs(baseSum - sum)
@@ -206,23 +123,29 @@ def snapshots(camera, continuous = False, name = "temp", baseSum = -1):
       else:
         final = f"./{imgname}"
       
-      f = open(final, 'wb')
-      try:
+      with open(final, 'wb') as f:
         f.write(streambytes)
-      finally:
-        f.close()
       
       log(f"Saved snapshot {final!r} with a difference of {percent}")
       
       if not save:
         break
-        
-    processConfig(streambytes, sum, capture_end - capture_start, sum_end - sum_start)
     
+    configuration = config.process(pathConfig, streambytes)
+
     capture_start = capture_end = datetime.datetime.utcnow()
         
 def main():
-  global baseSum, continuous, pathBase, res, crop
+  log("==========  Starting up  ==========")
+
+  configuration = {}
+  arguments = {}
+
+  config.seed(pathConfig)
+  configuration = config.process(pathConfig)
+
+  pathBase = configuration['pathBase']
+  pathSnapshots = configuration['pathSnapshots']
 
   if (not os.path.isdir(pathSnapshots)):
     os.mkdir(pathSnapshots)
@@ -232,28 +155,36 @@ def main():
   if (not os.path.isfile(pathBase)):
     baseImageMissing = True
 
-  processArguments()
-  processConfig()
+  arguments = processArguments()
 
   log("Initializing camera...")
-  reassure = True
   with picamera.PiCamera() as camera:
-    if reassure:
-      log("Camera initalized")
-      reassure = False
+    log("Camera initalized")
 
     try:
+      log(f"Initializing camera settings from {configuration['cameraSettings']}")
+
+      awbMode = configuration['cameraSettings']['awbMode']
+      crop = configuration['cameraSettings']['crop']
+      exposureMode = configuration['cameraSettings']['exposureMode']
+      framerate = configuration['cameraSettings']['framerate']
+      iso = configuration['cameraSettings']['iso']
+      res = configuration['cameraSettings']['res']
+      rotation = configuration['cameraSettings']['rotation']
+      shutterSpeed = configuration['cameraSettings']['shutterSpeed']
+
       camera.resolution = res
-      camera.rotation = 90
+      camera.rotation = rotation
       camera.crop = crop
-      camera.framerate = 60
-      camera.iso = 320
+      camera.framerate = framerate
+      camera.iso = iso
       time.sleep(2)
-      camera.shutter_speed = 16000
-      camera.exposure_mode = 'off'
+      camera.shutter_speed = shutterSpeed
+      camera.exposure_mode = exposureMode
       g = camera.awb_gains
-      camera.awb_mode = 'off'
+      camera.awb_mode = awbMode
       camera.awb_gains = g
+
       camera.start_preview()
 
       if (baseImageMissing):
@@ -262,24 +193,35 @@ def main():
         log(f"Initiated base image and copied into '{pathSnapshots}'")
       
       try:
-        baseSum = imgsum(cv2.imread(pathBase, cv2.IMREAD_COLOR))
+        baseSum = imgsum(cv2.imread(pathBase, cv2.IMREAD_COLOR), configuration)
       except:
         baseSum = -1
+
+      if baseSum != configuration['baseSum']:
+        log(F"Updating baseSum config value to {baseSum}")
+        config.updateProperty(pathConfig, ['baseSum', int(baseSum)])
       
+      continuous = arguments['continuous']
+      updateBase = arguments['updateBase']
+
       if continuous:
-        snapshots(camera, True, baseSum = baseSum)
+        log("Entering snapshot loop")
+        snapshots(pathSnapshots, camera, True, baseSum = baseSum, configuration = configuration, arguments = arguments)
       else:
         if updateBase:
-          benchmark(lambda: snapshots(camera, name = "base"))
+          benchmark(lambda: snapshots(pathSnapshots, camera, name = "base", configuration = configuration, arguments = arguments))
         else:
-          benchmark(lambda: snapshots(camera))
+          benchmark(lambda: snapshots(pathSnapshots, camera, configuration = configuration, arguments = arguments))
     
     except:
-      log(sys.exc_info()[0])
-      log(sys.exc_info()[1])
-      log(sys.exc_info()[2])
+      log(f"Exception info 1: {sys.exc_info()[0]}")
+      log(f"Exception info 2: {sys.exc_info()[1]}")
+      log(f"Exception traceback: {traceback.print_tb(sys.exc_info()[2])}")
       
     finally:
       camera.stop_preview()
-      
-main()
+
+try:
+  main()
+finally:
+  log("========== Shutting down ==========")
