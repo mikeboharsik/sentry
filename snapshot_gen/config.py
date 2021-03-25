@@ -100,7 +100,19 @@ def process(pathConfig, streambytes = None):
 
   return updatedConfig
 
-def updateProperty(pathConfig, val):
+def get(pathConfig, prop):
+  updatedConfig = {}
+
+  with open(pathConfig) as f:
+    updatedConfig = json.loads(f.read())
+
+  curVal = updatedConfig
+  for i in range(len(prop)):
+    curVal = curVal[prop[i]]
+
+  return curVal
+
+def set(pathConfig, val):
   updatedConfig = {}
 
   with open(pathConfig) as f:
@@ -114,3 +126,5 @@ def updateProperty(pathConfig, val):
 
   with open(pathConfig, 'w') as f:
     f.write(json.dumps(updatedConfig, indent = 2, sort_keys = True))
+
+  return val[-1]

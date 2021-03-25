@@ -162,8 +162,7 @@ def main():
   reinitialize = True
 
   while reinitialize:
-    reinitialize = False
-    config.updateProperty(pathConfig, ['requests', 'reinitialize', False])
+    reinitialize = config.set(pathConfig, ['requests', 'reinitialize', False])
 
     log("Initializing camera...")
 
@@ -171,16 +170,17 @@ def main():
       log("Camera initalized")
 
       try:
-        log(f"Initializing camera settings from {configuration['cameraSettings']}")
+        cameraSettings = config.get(pathConfig, ['cameraSettings'])
+        log(f"Initializing camera settings from {cameraSettings}")
 
-        awbMode = configuration['cameraSettings']['awbMode']
-        crop = configuration['cameraSettings']['crop']
-        exposureMode = configuration['cameraSettings']['exposureMode']
-        framerate = configuration['cameraSettings']['framerate']
-        iso = configuration['cameraSettings']['iso']
-        res = configuration['cameraSettings']['res']
-        rotation = configuration['cameraSettings']['rotation']
-        shutterSpeed = configuration['cameraSettings']['shutterSpeed']
+        awbMode = cameraSettings['awbMode']
+        crop = cameraSettings['crop']
+        exposureMode = cameraSettings['exposureMode']
+        framerate = cameraSettings['framerate']
+        iso = cameraSettings['iso']
+        res = cameraSettings['res']
+        rotation = cameraSettings['rotation']
+        shutterSpeed = cameraSettings['shutterSpeed']
 
         camera.resolution = res
         camera.rotation = rotation
@@ -208,7 +208,7 @@ def main():
 
         if baseSum != configuration['baseSum']:
           log(F"Updating baseSum config value to {baseSum}")
-          config.updateProperty(pathConfig, ['baseSum', int(baseSum)])
+          config.set(pathConfig, ['baseSum', int(baseSum)])
         
         continuous = arguments['continuous']
         updateBase = arguments['updateBase']
@@ -218,7 +218,7 @@ def main():
           snapshots(pathSnapshots, camera, True, baseSum = baseSum, configuration = configuration, arguments = arguments)
 
           configuration = config.process(pathConfig)
-          if configuration['requests']['reinitialize']:
+          if config.get(pathConfig, ['requests', 'reinitialize']):
             reinitialize = True
         else:
           if updateBase:
