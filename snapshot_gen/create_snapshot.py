@@ -132,6 +132,8 @@ def snapshots(pathSnapshots, camera, continuous = False, name = "temp", baseSum 
         break
     
     configuration = config.process(pathConfig, streambytes)
+    if configuration['requests']['reinitialize']:
+      break
 
     capture_start = capture_end = datetime.datetime.utcnow()
         
@@ -157,69 +159,80 @@ def main():
 
   arguments = processArguments()
 
-  log("Initializing camera...")
-  with picamera.PiCamera() as camera:
-    log("Camera initalized")
+  reinitialize = True
 
-    try:
-      log(f"Initializing camera settings from {configuration['cameraSettings']}")
+  while reinitialize:
+    reinitialize = False
+    config.updateProperty(pathConfig, ['requests', 'reinitialize', False])
 
-      awbMode = configuration['cameraSettings']['awbMode']
-      crop = configuration['cameraSettings']['crop']
-      exposureMode = configuration['cameraSettings']['exposureMode']
-      framerate = configuration['cameraSettings']['framerate']
-      iso = configuration['cameraSettings']['iso']
-      res = configuration['cameraSettings']['res']
-      rotation = configuration['cameraSettings']['rotation']
-      shutterSpeed = configuration['cameraSettings']['shutterSpeed']
+    log("Initializing camera...")
 
-      camera.resolution = res
-      camera.rotation = rotation
-      camera.crop = crop
-      camera.framerate = framerate
-      camera.iso = iso
-      time.sleep(2)
-      camera.shutter_speed = shutterSpeed
-      camera.exposure_mode = exposureMode
-      g = camera.awb_gains
-      camera.awb_mode = awbMode
-      camera.awb_gains = g
+    with picamera.PiCamera() as camera:
+      log("Camera initalized")
 
-      camera.start_preview()
-
-      if (baseImageMissing):
-        snapshots(camera, name = "base")
-        shutil.copyfile(pathBase, f"{pathSnapshots}/{currentTimeFileName()}")
-        log(f"Initiated base image and copied into '{pathSnapshots}'")
-      
       try:
-        baseSum = imgsum(cv2.imread(pathBase, cv2.IMREAD_COLOR), configuration)
-      except:
-        baseSum = -1
+        log(f"Initializing camera settings from {configuration['cameraSettings']}")
 
-      if baseSum != configuration['baseSum']:
-        log(F"Updating baseSum config value to {baseSum}")
-        config.updateProperty(pathConfig, ['baseSum', int(baseSum)])
-      
-      continuous = arguments['continuous']
-      updateBase = arguments['updateBase']
+        awbMode = configuration['cameraSettings']['awbMode']
+        crop = configuration['cameraSettings']['crop']
+        exposureMode = configuration['cameraSettings']['exposureMode']
+        framerate = configuration['cameraSettings']['framerate']
+        iso = configuration['cameraSettings']['iso']
+        res = configuration['cameraSettings']['res']
+        rotation = configuration['cameraSettings']['rotation']
+        shutterSpeed = configuration['cameraSettings']['shutterSpeed']
 
-      if continuous:
-        log("Entering snapshot loop")
-        snapshots(pathSnapshots, camera, True, baseSum = baseSum, configuration = configuration, arguments = arguments)
-      else:
-        if updateBase:
-          benchmark(lambda: snapshots(pathSnapshots, camera, name = "base", configuration = configuration, arguments = arguments))
+        camera.resolution = res
+        camera.rotation = rotation
+        camera.crop = crop
+        camera.framerate = framerate
+        camera.iso = iso
+        time.sleep(2)
+        camera.shutter_speed = shutterSpeed
+        camera.exposure_mode = exposureMode
+        g = camera.awb_gains
+        camera.awb_mode = awbMode
+        camera.awb_gains = g
+
+        camera.start_preview()
+
+        if (baseImageMissing):
+          snapshots(camera, name = "base")
+          shutil.copyfile(pathBase, f"{pathSnapshots}/{currentTimeFileName()}")
+          log(f"Initiated base image and copied into '{pathSnapshots}'")
+        
+        try:
+          baseSum = imgsum(cv2.imread(pathBase, cv2.IMREAD_COLOR), configuration)
+        except:
+          baseSum = -1
+
+        if baseSum != configuration['baseSum']:
+          log(F"Updating baseSum config value to {baseSum}")
+          config.updateProperty(pathConfig, ['baseSum', int(baseSum)])
+        
+        continuous = arguments['continuous']
+        updateBase = arguments['updateBase']
+
+        if continuous:
+          log("Entering snapshot loop")
+          snapshots(pathSnapshots, camera, True, baseSum = baseSum, configuration = configuration, arguments = arguments)
+
+          configuration = config.process(pathConfig)
+          if configuration['requests']['reinitialize']:
+            reinitialize = True
         else:
-          benchmark(lambda: snapshots(pathSnapshots, camera, configuration = configuration, arguments = arguments))
-    
-    except:
-      log(f"Exception info 1: {sys.exc_info()[0]}")
-      log(f"Exception info 2: {sys.exc_info()[1]}")
-      log(f"Exception traceback: {traceback.print_tb(sys.exc_info()[2])}")
+          if updateBase:
+            benchmark(lambda: snapshots(pathSnapshots, camera, name = "base", configuration = configuration, arguments = arguments))
+          else:
+            benchmark(lambda: snapshots(pathSnapshots, camera, configuration = configuration, arguments = arguments))
       
-    finally:
-      camera.stop_preview()
+      except:
+        log(f"Exception info 1: {sys.exc_info()[0]}")
+        log(f"Exception info 2: {sys.exc_info()[1]}")
+        log(f"Exception traceback: {traceback.print_tb(sys.exc_info()[2])}")
+        
+      finally:
+        camera.stop_preview()
 
 try:
   main()

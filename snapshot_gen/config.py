@@ -51,7 +51,8 @@ defaultConfig = {
   'quality': defaultQuality,
   'requestProcessingIntervalSeconds': defaultRequestProcessingIntervalSeconds,
   'requests': {
-    'updateBase': None,
+    'reinitialize': False,
+    'updateBase': False,
   },
   'tolerance': defaultTolerance,
   'width': defaultWidth,
