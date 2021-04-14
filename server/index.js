@@ -5,6 +5,8 @@ const { exec } = require('child_process');
 const cron = require('cron').CronJob;
 const http = require('http');
 
+const { mkdir, readdir, rename } = require('fs').promises;
+
 const app = express();
 const httpServer = http.createServer(app);
 const io = require('socket.io')(httpServer, {});
@@ -14,13 +16,14 @@ process.env.PASSWORD = PASSWORD;
 
 const port = 13370;
 
+const pathClient = '../client';
+const pathConfig = '../config.json';
+const pathServerLog = './nohup.out';
 const pathSnapshotGeneration = '../snapshot_gen';
 const pathBase = `${pathSnapshotGeneration}/base.jpg`;
-const pathConfig = '../config.json';
 const pathSnapshots = '../../snapshots';
 const pathSnapshotsLog = `${pathSnapshotGeneration}/nohup.out`;
-const pathClient = '../client';
-const pathServerLog = './nohup.out';
+const pathGraveyard = '../../graveyard';
 
 function log(msg) {
   console.log(`${new Date().toISOString()} ${msg}`);
@@ -147,25 +150,26 @@ app.get('/api/snapshots/:idx', async (req, res) => {
 app.delete('/api/snapshots/:idx', async (req, res) => {  
   let { idx } = req.params;
   
-  const contentType = req.get('Content-Type');
-  
   const fileName = (await getFileNames())[idx];
   
   if (!fileName) return res.status(400).send();
   
   log(`${fileName} exists`);
   
-  fs.unlink(
-    `${pathSnapshots}/${fileName}`,
-    (err) => {
-      if (err) return res.status(400).send(err);
-      
-      log('emitting');
-      io.emit('deleted', idx);
-      log('emitted');
-      res.status(200).send();
-    }
-  );
+  try {
+    await readdir(pathGraveyard);
+  } catch {
+    await mkdir(pathGraveyard);
+    log(`Created nonexistent dir '${pathGraveyard}'`);
+  }
+
+  await rename(`${pathSnapshots}/${fileName}`, `${pathGraveyard}/${fileName}`);
+
+  log('emitting');
+  io.emit('deleted', idx);
+  log('emitted');
+
+  res.status(200).send();
 });
 
 app.get('/api/server/log', (req, res) => {
