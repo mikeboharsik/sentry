@@ -5,7 +5,7 @@ const { exec } = require('child_process');
 const cron = require('cron').CronJob;
 const http = require('http');
 
-const { mkdir, readdir, rename } = require('fs').promises;
+const { mkdir, readdir, readFile, rename, writeFile } = require('fs').promises;
 
 const app = express();
 const httpServer = http.createServer(app);
@@ -127,21 +127,15 @@ app.get('/api/snapshots/:idx', async (req, res) => {
   const fileName = (await getFileNames())[idx];
   
   if (json) {
-    fs.readFile(
-      `${pathSnapshots}/${fileName}`,
-      { encoding: 'base64' },
-      (err, data) => {
-        if (err) return res.status(404).send();
-        
-        const info = {
-          data,
-          name: fileName,
-        };      
-        
-        res.set('Content-Type', 'application/json');
-        res.send(JSON.stringify(info));
-      }
-    );
+    const data = await readFile(`${pathSnapshots}/${fileName}`, { encoding: 'base64' });
+
+    const info = JSON.stringify({
+      data,
+      name: fileName,
+    });
+
+    res.set('Content-Type', 'application/json');
+    res.send(info);
   } else {
     res.sendFile(path.join(__dirname, `${pathSnapshots}/${fileName}`));
   }
@@ -177,118 +171,96 @@ app.get('/api/server/log', (req, res) => {
 	res.sendFile(path.join(__dirname, pathServerLog));
 });
 
-app.get('/api/config*', (req, res) => {
-  fs.readFile(
-    pathConfig,
-    { encoding: 'utf8' },
-    (err, data) => {
-      const json = JSON.parse(data);
-      let result = json;
-      
-      if (req.params[0]) {
-        const paths = req.params[0].split('/').reduce((acc, cur) => { if (cur) acc.push(cur); return acc; }, []);
-        
-        for (const path of paths) {
-          result = result[path];
-        }
-      }
-      
-      res.set('Content-Type', 'application/json');
-      res.send(JSON.stringify(result, null, '  '));
+app.get('/api/config*', async (req, res) => {
+  const data = await readFile(pathConfig, { encoding: 'utf8' });
+
+  const json = JSON.parse(data);
+  let result = json;
+  
+  if (req.params[0]) {
+    const paths = req.params[0].split('/').reduce((acc, cur) => { if (cur) acc.push(cur); return acc; }, []);
+    
+    for (const path of paths) {
+      result = result[path];
     }
-  );
+  }
+  
+  res.set('Content-Type', 'application/json');
+  res.send(JSON.stringify(result, null, '  '));
 });
 
-app.patch('/api/config*', (req, res) => {
-  fs.readFile(
-    pathConfig,
-    { encoding: 'utf8' },
-    (err, data) => {
-      const json = JSON.parse(data);
-      const paths = req.params[0].split('/').reduce((acc, cur) => { if (cur) acc.push(cur); return acc; }, []);
-      let result = json;
-      
-      const { rawBody } = req;
-      let inputValue = parseFloat(rawBody);
-      if (isNaN(inputValue)) {
-        switch(rawBody) {
-          case 'true':
-            inputValue = true;
-            break;
-          case 'false':
-            inputValue = false;
-            break;
-          default:
-            inputValue = rawBody;
-            break;
-        }
-      }
-      
-      if (paths.length === 1) {
-        json[paths[0]] = inputValue;
-      } else if (paths.length > 1) {
-        let cur = json;
-        
-        for (i = 0; i < paths.length - 1; i++){
-          const path = paths[i];
-          cur = cur[path];
-        }
-        
-        cur[paths[paths.length - 1]] = inputValue;
-      }
-      
-      result = JSON.stringify(json, null, '  ');
-      
-      fs.writeFile(
-        pathConfig,
-        result,
-        { encoding: 'utf8' },
-        err => {
-          res.set('Content-Type', 'application/json');
-          res.send(result);
-        }
-      );
+app.patch('/api/config*', async (req, res) => {
+  const data = await readFile(pathConfig);
+
+  const json = JSON.parse(data);
+  const paths = req.params[0].split('/').reduce((acc, cur) => { if (cur) acc.push(cur); return acc; }, []);
+  let result = json;
+  
+  const { rawBody } = req;
+  let inputValue = parseFloat(rawBody);
+  if (isNaN(inputValue)) {
+    switch(rawBody) {
+      case 'true':
+        inputValue = true;
+        break;
+      case 'false':
+        inputValue = false;
+        break;
+      default:
+        inputValue = rawBody;
+        break;
     }
-  );
+  }
+  
+  if (paths.length === 1) {
+    json[paths[0]] = inputValue;
+  } else if (paths.length > 1) {
+    let cur = json;
+    
+    for (i = 0; i < paths.length - 1; i++){
+      const path = paths[i];
+      cur = cur[path];
+    }
+    
+    cur[paths[paths.length - 1]] = inputValue;
+  }
+  
+  result = JSON.stringify(json, null, '  ');
+  
+  await writeFile(pathConfig, result, { encoding: 'utf8' });
+
+  res.set('Content-Type', 'application/json');
+  res.send(result);
 });
 
-app.delete('/api/config*', (req, res) => {
-  fs.readFile(
-    pathConfig,
-    { encoding: 'utf8' },
-    (err, data) => {
-      const json = JSON.parse(data);
-      const paths = req.params[0].split('/').reduce((acc, cur) => { if (cur) acc.push(cur); return acc; }, []);
-      let result = json;
-      
-      if (paths.length === 1) {
-        delete json[paths[0]];
-      } else if (paths.length > 1) {
-        let cur = json;
-        
-        for (i = 0; i < paths.length - 1; i++){
-          const path = paths[i];
-          cur = cur[path];
-        }
-        
-        delete cur[paths[paths.length - 1]];
-      }
-      
-      result = JSON.stringify(json, null, '  ');
-      
-      res.send(result);
-      
-      fs.writeFile(
-        pathConfig,
-        result,
-        { encoding: 'utf8' },
-        err => {
-          res.set('Content-Type', 'application/json');
-          res.send(result);
-        }
-      );
+app.delete('/api/config*', async (req, res) => {
+  const data = await readFile(pathConfig, { encoding: 'utf8' });
+
+  const json = JSON.parse(data);
+  const paths = req.params[0].split('/').reduce((acc, cur) => { if (cur) acc.push(cur); return acc; }, []);
+  let result = json;
+  
+  if (paths.length === 1) {
+    delete json[paths[0]];
+  } else if (paths.length > 1) {
+    let cur = json;
+    
+    for (i = 0; i < paths.length - 1; i++){
+      const path = paths[i];
+      cur = cur[path];
     }
-  );
+    
+    delete cur[paths[paths.length - 1]];
+  }
+  
+  result = JSON.stringify(json, null, '  ');
+  
+  res.send(result);
+  
+  await writeFile(pathConfig, result, { encoding: 'utf8' });
+
+  res.set('Content-Type', 'application/json');
+  res.send(result);
 });
 
 app.post('/api/bash', (req, res) => {
