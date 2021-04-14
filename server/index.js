@@ -25,6 +25,8 @@ const pathSnapshots = '../../snapshots';
 const pathSnapshotsLog = `${pathSnapshotGeneration}/nohup.out`;
 const pathGraveyard = '../../graveyard';
 
+const jobs = [];
+
 function log(msg) {
   console.log(`${new Date().toISOString()} ${msg}`);
 }
@@ -317,21 +319,25 @@ io.on('connection', socket => {
 
 let latestFile = null;
 
-const job = new cron('*/5 * * * * *', async () => {
-  const cur = String((await getFileNames())[0]);
-  
-  if (latestFile !== null && latestFile !== cur) {
-    io.emit('latestFile', cur);
-  }
-  
-  latestFile = cur;
-}, null, true, 'America/New_York');
-job.start();
+jobs.push(
+  new cron('*/5 * * * * *', async () => {
+    const cur = String((await getFileNames())[0]);
+
+    if (latestFile !== null && latestFile !== cur) {
+      io.emit('latestFile', cur);
+    }
+    
+    latestFile = cur;
+  }, null, true, 'America/New_York')
+);
+
+jobs.forEach(job => job.start());
 
 log(`Server running`);
 
 function shutdown() {
-  job.stop();
+  jobs.forEach(job => job.stop());
+
   sockets.forEach(socket => socket.destroy?.());
   
   log('Closing down server');
