@@ -4,6 +4,7 @@ const path = require('path');
 const { exec } = require('child_process');
 const cron = require('cron').CronJob;
 const http = require('http');
+const { v4: uuidv4 } = require('uuid');
 
 const { mkdir, readdir, readFile, rename, writeFile } = require('fs').promises;
 
@@ -27,8 +28,12 @@ const pathGraveyard = '../../graveyard';
 
 const jobs = [];
 
-function log(msg) {
-  console.log(`${new Date().toISOString()} ${msg}`);
+function log(msg, req = {}) {
+  const { cid } = req;
+
+  const cidStr = cid ? ` [cid:${cid}] ` : ' ';
+
+  console.log(`${new Date().toISOString()}${cidStr}${msg}`);
 }
 
 function readDirAsync(dir) {
@@ -64,7 +69,9 @@ function rawBody(req, res, next) {
 app.use(rawBody);
 
 app.use((req, res, next) => {
-  log(`${req.ip} -> ${req.method} ${req.originalUrl}`);
+  req.cid = uuidv4().toUpperCase();
+
+  log(`${req.ip} -> ${req.method} ${req.originalUrl}`, req);
   
   res.removeHeader('X-Powered-By');
   
@@ -75,7 +82,7 @@ app.use((req, res, next) => {
   const { ip, method, query } = req;
   
   const isClientLocal = ip.match(/192\.168\.1/);
-  
+
   if (isClientLocal) { 
     res.set('X-Authenticated', 'true')
     res.set('Access-Control-Allow-Headers', '*');
@@ -83,7 +90,7 @@ app.use((req, res, next) => {
     req.isAuthenticated = true;
   } else {
     if (query) {
-      console.log('pass', process.env.PASSWORD);
+      log(`pass: ${process.env.PASSWORD}`, req);
       if (!query.pass || query.pass !== process.env.PASSWORD) {
         return res.status(404).send();
       }
@@ -150,20 +157,20 @@ app.delete('/api/snapshots/:idx', async (req, res) => {
   
   if (!fileName) return res.status(400).send();
   
-  log(`${fileName} exists`);
+  log(`${fileName} exists`, req);
   
   try {
     await readdir(pathGraveyard);
   } catch {
     await mkdir(pathGraveyard);
-    log(`Created nonexistent dir '${pathGraveyard}'`);
+    log(`Created nonexistent dir '${pathGraveyard}'`, req);
   }
 
   await rename(`${pathSnapshots}/${fileName}`, `${pathGraveyard}/${fileName}`);
 
-  log('emitting');
+  log('emitting', req);
   io.emit('deleted', idx);
-  log('emitted');
+  log('emitted', req);
 
   res.status(200).send();
 });
@@ -302,18 +309,20 @@ app.get('/api/client/build', (req, res) => {
   );
 });
 
-app.get('/', (req, res) => {
-  res.send('OK');
+app.get('*', (req, res) => {
+  log('default path', req);
+
+  res.sendFile(path.join(__dirname, `${pathClient}/index.html`));
 });
 
 const sockets = [];
 io.on('connection', socket => {
-  log(`connection: ${socket.id}`);
+  log(`[socketId:${socket.id}] Connected`);
   
   sockets.push(socket);
   
   socket.on('disconnecting', reason => {
-    log(`${socket.id} disconnecting: ${reason}`);
+    log(`[socketId:${socket.id}] Disconnected with reason: ${reason}`);
   });
 });
 
