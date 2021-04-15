@@ -25,7 +25,7 @@ try {
     Pop-Location
   }
   
-  Copy-Item -Path "$PSScriptRoot\client\gulp-build\index.html" -Recurse -Destination "$stagingFolder\client"
+  Copy-Item -Path "$PSScriptRoot\client\build\**" -Recurse -Destination "$stagingFolder\client"
 
   Copy-Item -Path "$PSScriptRoot\server\*.js*" -Recurse -Container:$false -Destination "$stagingFolder\server"
   Copy-Item -Path "$PSScriptRoot\server\.env*" -Recurse -Container:$false -Destination "$stagingFolder\server"
