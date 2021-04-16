@@ -316,7 +316,7 @@ app.get('/api/client/build', (req, res) => {
 });
 
 app.get('*', (req, res) => {
-  log('default path', req);
+  log(`Default handler hit for '${req.originalUrl}'`, req);
 
   res.sendFile(path.join(__dirname, `${pathClient}/index.html`));
 });

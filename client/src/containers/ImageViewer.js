@@ -29,8 +29,6 @@ function useFreshRef(val) {
 const ImageViewer = props => {
   const { socketClient } = props;
 
-  console.log('image viewer');
-
   const [index, setIndex] = useState(0);
   const [img, setImg] = useState(undefined);
   const [imgName, setImgName] = useState(undefined);
@@ -172,7 +170,7 @@ const ImageViewer = props => {
       </div>
     ) : null;
 
-    const lastReadContent = config ? `Last read: ${config.lastRead}` : '';
+    const lastReadContent = config ? <a style={{ color: '#aaa' }} target="_blank" rel='noreferrer' href={getUri('/api/server/log')}>{`Last read: ${config.lastRead}`}</a> : '';
     
     middle = (
       <div style={{ width: imgWidth, height: imgHeight }}>

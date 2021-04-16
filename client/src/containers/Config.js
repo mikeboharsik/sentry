@@ -15,7 +15,7 @@ const Config = props => {
 
   return (
     <div>
-      <input id={passwordInputId} type="text"></input>
+      <input id={passwordInputId} type="password"></input>
       <button onClick={() => commitHandler({ history })}>Commit</button>
     </div>
   );
