@@ -36,18 +36,8 @@ function log(msg, req = {}) {
   console.log(`${new Date().toISOString()}${cidStr}${msg}`);
 }
 
-function readDirAsync(dir) {
-  return new Promise((res, rej) => {
-    fs.readdir(dir, (err, files) => {
-      if (err) return rej(err);
-      
-      return res(files);
-    });
-  });
-}
-
-async function getFileNames() {
-  return await readDirAsync(pathSnapshots)
+async function getFileNames(path) {
+  return await readdir(path)
     .then(files => files.sort((a, b) => a < b ? 1 : a > b ? -1 : 0));
 }
 
@@ -138,11 +128,12 @@ app.get('/api/snapshots/:idx', async (req, res) => {
   
   const contentType = req.get('Content-Type');
   const json = contentType === 'application/json';
-  
-  const fileName = (await getFileNames())[idx];
+  const relevantPath = pathSnapshots;
+
+  const fileName = (await getFileNames(relevantPath))[idx];
   
   if (json) {
-    const data = await readFile(`${pathSnapshots}/${fileName}`, { encoding: 'base64' });
+    const data = await readFile(`${relevantPath}/${fileName}`, { encoding: 'base64' });
 
     const info = JSON.stringify({
       data,
@@ -152,14 +143,16 @@ app.get('/api/snapshots/:idx', async (req, res) => {
     res.set('Content-Type', 'application/json');
     res.send(info);
   } else {
-    res.sendFile(path.join(__dirname, `${pathSnapshots}/${fileName}`));
+    res.sendFile(path.join(__dirname, `${relevantPath}/${fileName}`));
   }
 });
 
 app.delete('/api/snapshots/:idx', async (req, res) => {  
   let { idx } = req.params;
+
+  const relevantPath = pathSnapshots;
   
-  const fileName = (await getFileNames())[idx];
+  const fileName = (await getFileNames(relevantPath))[idx];
   
   if (!fileName) return res.status(400).send();
   
@@ -181,6 +174,50 @@ app.delete('/api/snapshots/:idx', async (req, res) => {
   res.status(200).send();
 });
 
+app.get('/api/graveyard/:idx', async (req, res) => {
+  let { idx } = req.params;
+  
+  const contentType = req.get('Content-Type');
+  const json = contentType === 'application/json';
+  const relevantPath = pathGraveyard;
+  
+  const fileName = (await getFileNames(relevantPath))[idx];
+  
+  if (json) {
+    const data = await readFile(`${relevantPath}/${fileName}`, { encoding: 'base64' });
+
+    const info = JSON.stringify({
+      data,
+      name: fileName,
+    });
+
+    res.set('Content-Type', 'application/json');
+    res.send(info);
+  } else {
+    res.sendFile(path.join(__dirname, `${relevantPath}/${fileName}`));
+  }
+});
+
+app.post('/api/graveyard/:idx/restore', async (req, res) => {  
+  let { idx } = req.params;
+
+  const relevantPath = pathGraveyard;
+  
+  const fileName = (await getFileNames(relevantPath))[idx];
+  
+  if (!fileName) return res.status(400).send();
+  
+  log(`${fileName} exists`, req);
+
+  await rename(`${relevantPath}/${fileName}`, `${pathSnapshots}/${fileName}`);
+
+  log('emitting', req);
+  io.emit('deleted', idx);
+  log('emitted', req);
+
+  res.status(200).send();
+});
+
 app.get('/api/server/log', (req, res) => {
   res.set('Content-Type', 'text/plain');
 	res.sendFile(path.join(__dirname, pathServerLog));
@@ -193,7 +230,9 @@ app.get('/api/config*', async (req, res) => {
   let result = json;
   
   if (req.params[0]) {
-    const paths = req.params[0].split('/').reduce((acc, cur) => { if (cur) acc.push(cur); return acc; }, []);
+    const paths = req.params[0]
+      .split('/')
+      .reduce((acc, cur) => { if (cur) acc.push(cur); return acc; }, []);
     
     for (const path of paths) {
       result = result[path];
@@ -336,7 +375,9 @@ let latestFile = null;
 
 jobs.push(
   new cron('*/5 * * * * *', async () => {
-    const cur = String((await getFileNames())[0]);
+    const relevantPath = pathSnapshots;
+
+    const cur = String((await getFileNames(relevantPath))[0]);
 
     if (latestFile !== null && latestFile !== cur) {
       io.emit('latestFile', cur);
