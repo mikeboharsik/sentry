@@ -14,11 +14,15 @@ const App = props => {
       const socket = socketIOClient();
 
       socket.on('connect', () => {
-        console.log(socket.id);
+        const { id } = socket;
+
+        console.log(`Socket connected: ${id}`);
       });
 
       socket.on('disconnect', () => {
-        console.log(socket.id);
+        const { id } = socket;
+
+        console.log(`Socket disconnected: ${id}`);
       });
 
       setSocketClient(socket);
