@@ -79,7 +79,7 @@ app.use((req, res, next) => {
 });
 
 app.use((req, res, next) => {
-  const { ip, method, query } = req;
+  const { ip, method, originalUrl } = req;
   
   const isClientLocal = ip.match(/192\.168\.1/);
 
@@ -89,16 +89,8 @@ app.use((req, res, next) => {
     res.set('Access-Control-Allow-Origin', '*');
     req.isAuthenticated = true;
   } else {
-    if (query) {
-      log(`pass: ${process.env.PASSWORD}`, req);
-      if (!query.pass || query.pass !== process.env.PASSWORD) {
-        return res.status(404).send();
-      }
-
-      req.isAuthenticated = true;
-    } else {
-      return res.status(404).send();
-    }
+    const pass = req.header('pass');
+    req.isAuthenticated = pass === PASSWORD;
   }
   
   switch(method.toUpperCase()) {
@@ -114,6 +106,20 @@ app.use((req, res, next) => {
     default:
       next();
   }
+});
+
+app.use((req, res, next) => {
+  const authPatterns = [
+    '/api/snapshots/*'
+  ];
+
+  const { isAuthenticated, originalUrl } = req;
+
+  if (authPatterns.some(pattern => new RegExp(pattern).exec(originalUrl)) && !isAuthenticated) {
+    return res.status(404).send();
+  }
+
+  next();
 });
 
 app.use(express.static(pathClient));

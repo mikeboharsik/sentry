@@ -14,7 +14,7 @@ const App = props => {
       const socket = socketIOClient();
 
       socket.on('connect', () => {
-        console.log(socket.id, 'whoa');
+        console.log(socket.id);
       });
 
       socket.on('disconnect', () => {

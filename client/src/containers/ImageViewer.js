@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 
 import { getUri } from '../util/getUri';
 
@@ -38,7 +39,7 @@ const ImageViewer = props => {
   const [config, setConfig] = useState(null);
   
   async function getImage() {
-    await fetch(getUri(`/api/snapshots/${index}`), { headers: { 'Content-Type': 'application/json' } })
+    await fetch(getUri(`/api/snapshots/${index}`), { headers: { 'Content-Type': 'application/json', Pass: sessionStorage.pass } })
       .then(res => { if (!res.ok) { throw new Error("Response is not OK"); } else { return res; } })
       .then(res => { 
         const { headers } = res;
@@ -202,6 +203,12 @@ const ImageViewer = props => {
     );
   }
   
+  const configLink = (
+    <div style={{ position: 'absolute', bottom: '1em', right: '1em' }}>
+      <Link style={{ color: '#aaa', textDecoration: 'none' }} to="/config">O</Link>
+    </div>
+  );
+
   return (
     <div
       ref={cont => { setCont(cont); }}
@@ -218,6 +225,8 @@ const ImageViewer = props => {
     {leftArrow}
     {middle}
     {rightArrow}
+
+    {configLink}
     </div>
   );
 };
