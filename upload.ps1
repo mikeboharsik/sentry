@@ -32,8 +32,7 @@ try {
 
   Copy-Item -Path "$PSScriptRoot\snapshot_gen" -Recurse -Container:$false "$stagingFolder\snapshot_gen"
 
-  $utilFiles = 'init.sh', 'ksnp', 'ksrv', 'snp', 'srv'
-  Copy-Item -Path $utilFiles -Destination "$stagingFolder"
+  Copy-Item -Path "$PSScriptRoot\util\**" -Recurse -Destination "$stagingFolder"
 
   if (!$SkipUpload) {
     Push-Location $stagingFolder
