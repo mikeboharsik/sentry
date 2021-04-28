@@ -170,7 +170,16 @@ const ImageViewer = props => {
       </div>
     ) : null;
 
-    const lastReadContent = config ? <a style={{ color: '#aaa' }} target="_blank" rel='noreferrer' href={getUri('/api/server/log')}>{`Last read: ${config.lastRead}`}</a> : '';
+    const { lastRead } = config;
+    let lastReadContentColor = '#aaa';
+    const lastReadDate = new Date(`${lastRead}Z`);
+    if (lastRead && lastReadDate) {
+      const lastReadTooLong = Math.abs(new Date() - lastReadDate) > 15000;
+      if (lastReadTooLong) {
+        lastReadContentColor = '#f00';
+      }
+    }
+    const lastReadContent = lastRead ? <a style={{ color: lastReadContentColor }} target="_blank" rel='noreferrer' href={getUri('/api/server/log')}>{`Last read: ${lastRead}`}</a> : null;
     
     middle = (
       <div style={{ width: imgWidth, height: imgHeight }}>
@@ -192,7 +201,7 @@ const ImageViewer = props => {
           {imgName}
         </div>
         {deleteButton}
-        <div style={{ color: '#aaa' }}>{lastReadContent}</div>
+        <div style={{ color: lastReadContentColor }}>{lastReadContent}</div>
       </div>
     );
   } else {
