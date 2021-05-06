@@ -5,6 +5,7 @@ const { exec } = require('child_process');
 const cron = require('cron').CronJob;
 const http = require('http');
 const { v4: uuidv4 } = require('uuid');
+const { createLogger, ConsoleTransport, RotatingFileTransport } = require('@boost/log');
 
 const { mkdir, readdir, readFile, rename, writeFile } = require('fs').promises;
 
@@ -19,7 +20,7 @@ const port = 13370;
 
 const pathClient = '../client';
 const pathConfig = '../config.json';
-const pathServerLog = './nohup.out';
+const pathServerLog = './log.txt';
 const pathSnapshotGeneration = '../snapshot_gen';
 const pathBase = `${pathSnapshotGeneration}/base.jpg`;
 const pathSnapshots = '../../snapshots';
@@ -28,12 +29,24 @@ const pathGraveyard = '../../graveyard';
 
 const jobs = [];
 
+const logger = createLogger({
+  name: 'logger',
+  transports: [
+    new ConsoleTransport(),
+    new RotatingFileTransport({
+      levels: ['debug'],
+      path: pathServerLog,
+      rotation: 'hourly',
+    }),
+  ]
+});
+
 function log(msg, req = {}) {
   const { cid } = req;
 
-  const cidStr = cid ? ` [cid:${cid}] ` : ' ';
+  const cidStr = cid ? `[cid:${cid}] ` : ' ';
 
-  console.log(`${new Date().toISOString()}${cidStr}${msg}`);
+  logger.debug(`${cidStr}${msg}`);
 }
 
 async function getFileNames(path) {
