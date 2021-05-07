@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Route, BrowserRouter as Router, Switch } from 'react-router-dom';
 import socketIOClient from 'socket.io-client';
+import GlobalContext from './contexts/GlobalContext';
 
 import Config from './containers/Config';
 import ImageViewer from './containers/ImageViewer';
@@ -30,19 +31,21 @@ const App = props => {
   }, [socketClient]);
 
   return (
-    <Router>
-      <Switch>
-        <Route exact path="/config">
-          <Config socketClient={socketClient} />
-        </Route>
-        <Route exact path="/">
-          <ImageViewer socketClient={socketClient} />
-        </Route>
-        <Route>
-          <NotFound />
-        </Route>
-      </Switch>
-    </Router>
+    <GlobalContext.Provider value={{ socketClient }}>
+      <Router>
+        <Switch>
+          <Route exact path="/config">
+            <Config />
+          </Route>
+          <Route exact path="/">
+            <ImageViewer />
+          </Route>
+          <Route>
+            <NotFound />
+          </Route>
+        </Switch>
+      </Router>
+    </GlobalContext.Provider>
   );
 };
 

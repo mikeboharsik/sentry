@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
+import { useContext, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
+import GlobalContext from '../contexts/GlobalContext';
 
 import { getUri } from '../util/getUri';
 
@@ -27,7 +28,7 @@ function useFreshRef(val) {
 }
 
 const ImageViewer = props => {
-  const { socketClient } = props;
+  const { socketClient } = useContext(GlobalContext);
 
   const [index, setIndex] = useState(0);
   const [img, setImg] = useState(undefined);
@@ -35,7 +36,7 @@ const ImageViewer = props => {
   const [cont, setCont] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [config, setConfig] = useState(null);
-  
+
   async function getImage() {
     await fetch(getUri(`/api/snapshots/${index}`), { headers: { 'Content-Type': 'application/json', Pass: sessionStorage.pass } })
       .then(res => { if (!res.ok) { throw new Error("Response is not OK"); } else { return res; } })
@@ -229,13 +230,13 @@ const ImageViewer = props => {
       }}
       tabIndex={0}
     >
-    {leftArrow}
-    {middle}
-    {rightArrow}
+      {leftArrow}
+      {middle}
+      {rightArrow}
 
-    {configLink}
+      {configLink}
     </div>
-  );
+  )
 };
 
 export default ImageViewer;
