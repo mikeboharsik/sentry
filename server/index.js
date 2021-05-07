@@ -3,7 +3,6 @@ const path = require('path');
 const { exec } = require('child_process');
 const cron = require('cron').CronJob;
 const http = require('http');
-const { v4: uuidv4 } = require('uuid');
 const { mkdir, readdir, readFile, rename, writeFile } = require('fs').promises;
 
 const app = express();
@@ -17,12 +16,12 @@ const {
   PATH_CLIENT,
   PATH_CONFIG,
   PATH_GRAVEYARD,
-  PATH_SERVER_LOG,
   PATH_SNAPSHOTS_LOG,
   PATH_SNAPSHOTS,
  } = require('./util/consts');
 
- const { PASSWORD } = require('./util/config');
+ const { applyMiddleware } = require('./util/middleware');
+ const { registerRoutes } = require('./controllers');
 
 (async () => {  
   const port = 13370;
@@ -34,86 +33,18 @@ const {
       .then(files => files.sort((a, b) => a < b ? 1 : a > b ? -1 : 0));
   }
   
-  log('Serving starting');
-  
-  function rawBody(req, res, next) {
-    req.setEncoding('utf8');
-    req.rawBody = '';
-    req.on('data', function(chunk) {
-      req.rawBody += chunk;
-    });
-    req.on('end', function(){
-      try { if(req.rawBody) req.body = JSON.parse(req.rawBody) } catch(e) { console.error(e) }
-      
-      next();
-    });
-  }
-  
-  app.use(rawBody);
-  
-  app.use((req, res, next) => {
-    req.cid = uuidv4().toUpperCase();
-  
-    log(`${req.ip} -> ${req.method} ${req.originalUrl}`, req);
-    
-    res.removeHeader('X-Powered-By');
-    
-    next();
-  });
-  
-  app.use((req, res, next) => {
-    const { ip, method, originalUrl } = req;
-    
-    const isClientLocal = ip.match(/192\.168\.1/);
-  
-    if (isClientLocal) { 
-      res.set('X-Authenticated', 'true')
-      res.set('Access-Control-Allow-Headers', '*');
-      res.set('Access-Control-Allow-Origin', '*');
-      req.isAuthenticated = true;
-    } else {
-      const pass = req.header('pass');
-      req.isAuthenticated = pass === PASSWORD;
-    }
-    
-    switch(method.toUpperCase()) {
-      case 'POST':
-      case 'PATCH':
-      case 'DELETE':
-        if (isClientLocal) {
-          next();
-        } else {
-          return res.status(404).send();
-        }
-        break;
-      default:
-        next();
-    }
-  });
-  
-  app.use((req, res, next) => {
-    const authPatterns = [
-      '/api/snapshots/*'
-    ];
-  
-    const { isAuthenticated, originalUrl } = req;
-  
-    if (authPatterns.some(pattern => new RegExp(pattern).exec(originalUrl)) && !isAuthenticated) {
-      return res.status(404).send();
-    }
-  
-    next();
-  });
-  
-  app.use(express.static(PATH_CLIENT));
-  
+  log('Configuring server');
+
+  applyMiddleware(app);
+  registerRoutes(app);
+
   app.get('/api/snapshots/base', (req, res) => {
-    res.sendFile(path.join(__dirname, PATH_BASE));
+    res.sendFile(path.join(PATH_BASE));
   });
   
   app.get('/api/snapshots/log', (req, res) => {
     res.set('Content-Type', 'text/plain');
-    res.sendFile(path.join(__dirname, PATH_SNAPSHOTS_LOG));
+    res.sendFile(path.join(PATH_SNAPSHOTS_LOG));
   });
   
   app.get('/api/snapshots/:idx', async (req, res) => {
@@ -136,7 +67,7 @@ const {
       res.set('Content-Type', 'application/json');
       res.send(info);
     } else {
-      res.sendFile(path.join(__dirname, `${relevantPath}/${fileName}`));
+      res.sendFile(`${relevantPath}/${fileName}`);
     }
   });
   
@@ -187,7 +118,7 @@ const {
       res.set('Content-Type', 'application/json');
       res.send(info);
     } else {
-      res.sendFile(path.join(__dirname, `${relevantPath}/${fileName}`));
+      res.sendFile(`${relevantPath}/${fileName}`);
     }
   });
   
@@ -209,11 +140,6 @@ const {
     log('emitted', req);
   
     res.status(200).send();
-  });
-  
-  app.get('/api/server/log', (req, res) => {
-    res.set('Content-Type', 'text/plain');
-    res.sendFile(path.join(__dirname, PATH_SERVER_LOG));
   });
   
   app.get('/api/config*', async (req, res) => {
@@ -350,7 +276,7 @@ const {
   app.get('*', (req, res) => {
     log(`Default handler hit for '${req.originalUrl}'`, req);
   
-    res.sendFile(path.join(__dirname, `${PATH_CLIENT}/index.html`));
+    res.sendFile(`${PATH_CLIENT}/index.html`);
   });
   
   const sockets = [];
