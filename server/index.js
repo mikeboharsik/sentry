@@ -6,26 +6,26 @@ const cron = require('cron').CronJob;
 const http = require('http');
 const { v4: uuidv4 } = require('uuid');
 const { createLogger, ConsoleTransport, RotatingFileTransport } = require('@boost/log');
-
 const { mkdir, readdir, readFile, rename, writeFile } = require('fs').promises;
 
 const app = express();
 const httpServer = http.createServer(app);
 const io = require('socket.io')(httpServer, {});
 
+const { 
+  PATH_CLIENT,
+  PATH_CONFIG,
+  PATH_SERVER_LOG,
+  PATH_BASE,
+  PATH_SNAPSHOTS,
+  PATH_SNAPSHOTS_LOG,
+  PATH_GRAVEYARD,
+ } = require('./consts');
+
 const { PASSWORD } = JSON.parse(fs.readFileSync('./config.json'));
 process.env.PASSWORD = PASSWORD;
 
 const port = 13370;
-
-const pathClient = '../client';
-const pathConfig = '../config.json';
-const pathServerLog = './log.txt';
-const pathSnapshotGeneration = '../snapshot_gen';
-const pathBase = `${pathSnapshotGeneration}/base.jpg`;
-const pathSnapshots = '../../snapshots';
-const pathSnapshotsLog = `${pathSnapshotGeneration}/nohup.out`;
-const pathGraveyard = '../../graveyard';
 
 const jobs = [];
 
@@ -34,8 +34,8 @@ const logger = createLogger({
   transports: [
     new ConsoleTransport(),
     new RotatingFileTransport({
-      levels: ['debug'],
-      path: pathServerLog,
+      levels: ['trace', 'debug', 'info', 'warn', 'error'],
+      path: PATH_SERVER_LOG,
       rotation: 'hourly',
     }),
   ]
@@ -44,7 +44,7 @@ const logger = createLogger({
 function log(msg, req = {}) {
   const { cid } = req;
 
-  const cidStr = cid ? `[cid:${cid}] ` : ' ';
+  const cidStr = cid ? `[cid:${cid}] ` : '';
 
   logger.debug(`${cidStr}${msg}`);
 }
@@ -125,15 +125,15 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use(express.static(pathClient));
+app.use(express.static(PATH_CLIENT));
 
 app.get('/api/snapshots/base', (req, res) => {
-	res.sendFile(path.join(__dirname, pathBase));
+	res.sendFile(path.join(__dirname, PATH_BASE));
 });
 
 app.get('/api/snapshots/log', (req, res) => {
   res.set('Content-Type', 'text/plain');
-	res.sendFile(path.join(__dirname, pathSnapshotsLog));
+	res.sendFile(path.join(__dirname, PATH_SNAPSHOTS_LOG));
 });
 
 app.get('/api/snapshots/:idx', async (req, res) => {
@@ -141,7 +141,7 @@ app.get('/api/snapshots/:idx', async (req, res) => {
   
   const contentType = req.get('Content-Type');
   const json = contentType === 'application/json';
-  const relevantPath = pathSnapshots;
+  const relevantPath = PATH_SNAPSHOTS;
 
   const fileName = (await getFileNames(relevantPath))[idx];
   
@@ -163,7 +163,7 @@ app.get('/api/snapshots/:idx', async (req, res) => {
 app.delete('/api/snapshots/:idx', async (req, res) => {  
   let { idx } = req.params;
 
-  const relevantPath = pathSnapshots;
+  const relevantPath = PATH_SNAPSHOTS;
   
   const fileName = (await getFileNames(relevantPath))[idx];
   
@@ -172,13 +172,13 @@ app.delete('/api/snapshots/:idx', async (req, res) => {
   log(`${fileName} exists`, req);
   
   try {
-    await readdir(pathGraveyard);
+    await readdir(PATH_GRAVEYARD);
   } catch {
-    await mkdir(pathGraveyard);
-    log(`Created nonexistent dir '${pathGraveyard}'`, req);
+    await mkdir(PATH_GRAVEYARD);
+    log(`Created nonexistent dir '${PATH_GRAVEYARD}'`, req);
   }
 
-  await rename(`${pathSnapshots}/${fileName}`, `${pathGraveyard}/${fileName}`);
+  await rename(`${PATH_SNAPSHOTS}/${fileName}`, `${PATH_GRAVEYARD}/${fileName}`);
 
   log('emitting', req);
   io.emit('deleted', idx);
@@ -192,7 +192,7 @@ app.get('/api/graveyard/:idx', async (req, res) => {
   
   const contentType = req.get('Content-Type');
   const json = contentType === 'application/json';
-  const relevantPath = pathGraveyard;
+  const relevantPath = PATH_GRAVEYARD;
   
   const fileName = (await getFileNames(relevantPath))[idx];
   
@@ -214,7 +214,7 @@ app.get('/api/graveyard/:idx', async (req, res) => {
 app.post('/api/graveyard/:idx/restore', async (req, res) => {  
   let { idx } = req.params;
 
-  const relevantPath = pathGraveyard;
+  const relevantPath = PATH_GRAVEYARD;
   
   const fileName = (await getFileNames(relevantPath))[idx];
   
@@ -222,7 +222,7 @@ app.post('/api/graveyard/:idx/restore', async (req, res) => {
   
   log(`${fileName} exists`, req);
 
-  await rename(`${relevantPath}/${fileName}`, `${pathSnapshots}/${fileName}`);
+  await rename(`${relevantPath}/${fileName}`, `${PATH_SNAPSHOTS}/${fileName}`);
 
   log('emitting', req);
   io.emit('deleted', idx);
@@ -233,11 +233,11 @@ app.post('/api/graveyard/:idx/restore', async (req, res) => {
 
 app.get('/api/server/log', (req, res) => {
   res.set('Content-Type', 'text/plain');
-	res.sendFile(path.join(__dirname, pathServerLog));
+	res.sendFile(path.join(__dirname, PATH_SERVER_LOG));
 });
 
 app.get('/api/config*', async (req, res) => {
-  const data = await readFile(pathConfig, { encoding: 'utf8' });
+  const data = await readFile(PATH_CONFIG, { encoding: 'utf8' });
 
   const json = JSON.parse(data);
   let result = json;
@@ -257,7 +257,7 @@ app.get('/api/config*', async (req, res) => {
 });
 
 app.patch('/api/config*', async (req, res) => {
-  const data = await readFile(pathConfig);
+  const data = await readFile(PATH_CONFIG);
 
   const json = JSON.parse(data);
   const paths = req.params[0].split('/').reduce((acc, cur) => { if (cur) acc.push(cur); return acc; }, []);
@@ -294,14 +294,14 @@ app.patch('/api/config*', async (req, res) => {
   
   result = JSON.stringify(json, null, '  ');
   
-  await writeFile(pathConfig, result, { encoding: 'utf8' });
+  await writeFile(PATH_CONFIG, result, { encoding: 'utf8' });
 
   res.set('Content-Type', 'application/json');
   res.send(result);
 });
 
 app.delete('/api/config*', async (req, res) => {
-  const data = await readFile(pathConfig, { encoding: 'utf8' });
+  const data = await readFile(PATH_CONFIG, { encoding: 'utf8' });
 
   const json = JSON.parse(data);
   const paths = req.params[0].split('/').reduce((acc, cur) => { if (cur) acc.push(cur); return acc; }, []);
@@ -324,7 +324,7 @@ app.delete('/api/config*', async (req, res) => {
   
   res.send(result);
   
-  await writeFile(pathConfig, result, { encoding: 'utf8' });
+  await writeFile(PATH_CONFIG, result, { encoding: 'utf8' });
 
   res.set('Content-Type', 'application/json');
   res.send(result);
@@ -359,7 +359,7 @@ app.get('/api/stop', (req, res) => {
 app.get('/api/client/build', (req, res) => {
 	exec(
     'yarn build',
-    { cwd: pathClient },
+    { cwd: PATH_CLIENT },
     (err, stdout, stderr) => {
       res.set('Content-Type', 'text/plain');
       res.send(stdout);
@@ -370,7 +370,7 @@ app.get('/api/client/build', (req, res) => {
 app.get('*', (req, res) => {
   log(`Default handler hit for '${req.originalUrl}'`, req);
 
-  res.sendFile(path.join(__dirname, `${pathClient}/index.html`));
+  res.sendFile(path.join(__dirname, `${PATH_CLIENT}/index.html`));
 });
 
 const sockets = [];
@@ -388,7 +388,7 @@ let latestFile = null;
 
 jobs.push(
   new cron('*/5 * * * * *', async () => {
-    const relevantPath = pathSnapshots;
+    const relevantPath = PATH_SNAPSHOTS;
 
     const cur = String((await getFileNames(relevantPath))[0]);
 
