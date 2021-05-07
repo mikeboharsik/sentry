@@ -27,8 +27,7 @@ try {
   
   Copy-Item -Path "$PSScriptRoot\client\build\**" -Recurse -Destination "$stagingFolder\client"
 
-  Copy-Item -Path "$PSScriptRoot\server\*.js*" -Recurse -Container:$false -Destination "$stagingFolder\server"
-  Copy-Item -Path "$PSScriptRoot\server\.env*" -Recurse -Container:$false -Destination "$stagingFolder\server"
+  Copy-Item -Path "$PSScriptRoot\server\*" -Recurse -Exclude 'node_modules','.gitignore','config.json' -Destination "$stagingFolder\server"
 
   Copy-Item -Path "$PSScriptRoot\snapshot_gen" -Recurse -Container:$false "$stagingFolder\snapshot_gen"
 

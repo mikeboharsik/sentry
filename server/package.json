@@ -10,7 +10,8 @@
     "@boost/log": "^2.2.5",
     "cron": "^1.8.2",
     "express": "^4.17.1",
-    "socket.io": "^3.0.5"
+    "socket.io": "^3.0.5",
+    "uuid": "^8.3.2"
   },
   "devDependencies": {
     "pkg": "^4.4.9"

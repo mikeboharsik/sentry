@@ -1,6 +1,6 @@
 
 const PATH_CLIENT = '../client';
-const PATH_CONFIG = '../config.json';
+const PATH_CONFIG = './config.json';
 const PATH_GRAVEYARD = '../../graveyard';
 const PATH_SERVER_LOG = './logs/log.txt';
 const PATH_SNAPSHOT_GENERATION = '../snapshot_gen';
