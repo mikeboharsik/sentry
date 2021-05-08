@@ -3,7 +3,9 @@ const http = require('http');
 
 const app = express();
 const httpServer = http.createServer(app);
+
 const io = require('socket.io')(httpServer, {});
+const { destroySockets } = require('./util/socket')(io);
 const { startJobs, stopJobs } = require('./cronJobs')(io);
 
 const { log } = require('./util/logger');
@@ -14,21 +16,9 @@ const { PORT } = require('./util/config');
 const { applyMiddleware } = require('./util/middleware');
 const { registerRoutes } = require('./controllers');
 
-const sockets = [];
-io.on('connection', socket => {
-  log(`[socketId:${socket.id}] Connected`);
-  
-  sockets.push(socket);
-  
-  socket.on('disconnecting', reason => {
-    log(`[socketId:${socket.id}] Disconnected with reason: ${reason}`);
-  });
-});
-
 function shutdown() {
   stopJobs();
-
-  sockets.forEach(socket => socket.destroy?.());
+  destroySockets();
 
   httpServer.close(() => log('!!!!! Server has been shut down !!!!!'));
 
