@@ -26,11 +26,8 @@ try {
   }
   
   Copy-Item -Path "$PSScriptRoot\client\build\**" -Recurse -Destination "$stagingFolder\client"
-
   Copy-Item -Path "$PSScriptRoot\server\*" -Recurse -Exclude 'node_modules','.gitignore','config.json' -Destination "$stagingFolder\server"
-
   Copy-Item -Path "$PSScriptRoot\snapshot_gen" -Recurse -Container:$false "$stagingFolder\snapshot_gen"
-
   Copy-Item -Path "$PSScriptRoot\util\**" -Recurse -Destination "$stagingFolder"
 
   if (!$SkipUpload) {
