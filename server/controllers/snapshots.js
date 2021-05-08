@@ -1,5 +1,5 @@
 const path = require('path');
-const { mkdir, readdir, readFile } = require('fs').promises;
+const { mkdir, readdir, readFile, rename } = require('fs').promises;
 
 const { PATH_BASE, PATH_CONFIG, PATH_GRAVEYARD, PATH_SNAPSHOTS, PATH_SNAPSHOTS_LOG } = require('../util/consts');
 const { getFileNames } = require('../util/getFileNames');
