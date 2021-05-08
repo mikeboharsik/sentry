@@ -2,7 +2,8 @@
 Param(
   [string] $Hostname = "sentry.myfiosgateway.com",
   [switch] $SkipBuild,
-  [switch] $SkipUpload
+  [switch] $SkipUpload,
+  [switch] $KeepStagingFolder
 )
 
 $stagingFolder = "$PSScriptRoot\staging"
@@ -38,8 +39,14 @@ try {
     ssh "pi@$Hostname" "mkdir sentry"
     scp -r * "scp://pi@$Hostname/sentry"
     ssh "pi@$Hostname" "cd sentry; chmod +x ./init.sh;"
+    
+    Pop-Location
   } else {
     Write-Host ((tree /f $stagingFolder) -Join "`n")
+  }
+  
+  if (!$KeepStagingFolder) {
+    Remove-Item -Recurse -Force $stagingFolder
   }
 } finally {
   Set-Location $initialDir
