@@ -4,6 +4,7 @@ const http = require('http');
 const app = express();
 const httpServer = http.createServer(app);
 const io = require('socket.io')(httpServer, {});
+const { startJobs, stopJobs } = require('./util/cronJobs')(io);
 
 const { log } = require('./util/logger');
 
@@ -15,11 +16,12 @@ const { registerRoutes } = require('./controllers');
 const sockets = [];
 
 function shutdown() {
+  stopJobs();
+
   sockets.forEach(socket => socket.destroy?.());
-  
-  log('Closing down server');
-  httpServer.close();
-  
+
+  httpServer.close(() => log('!!!!! Server has been shut down !!!!!'));
+
   process.exit(0);
 }
 
@@ -62,6 +64,8 @@ function shutdown() {
   
   process.on('SIGTERM', shutdown);
   process.on('SIGINT', shutdown);
+
+  startJobs();
 
   httpServer.listen(port);
 })();
