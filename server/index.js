@@ -14,6 +14,15 @@ const { applyMiddleware } = require('./util/middleware');
 const { registerRoutes } = require('./controllers');
 
 const sockets = [];
+io.on('connection', socket => {
+  log(`[socketId:${socket.id}] Connected`);
+  
+  sockets.push(socket);
+  
+  socket.on('disconnecting', reason => {
+    log(`[socketId:${socket.id}] Disconnected with reason: ${reason}`);
+  });
+});
 
 function shutdown() {
   stopJobs();
@@ -25,47 +34,35 @@ function shutdown() {
   process.exit(0);
 }
 
-(async () => {  
-  const port = 13370;
-  
-  log('Configuring server');
+process.on('SIGTERM', shutdown);
+process.on('SIGINT', shutdown);
 
-  applyMiddleware(app, io);
-  registerRoutes(app);
-  
-  app.get('/api/stop', (req, res) => {
-    res.send();
-    
-    shutdown();
-  });
-  
-  app.get('*', (req, res) => {
-    log(`Default handler hit for '${req.originalUrl}'`, req);
-  
-    res.sendFile(`${PATH_CLIENT}/index.html`);
-  });
-  
-  app.use((err, req, res, next) => {
-    log(`Encountered unexpected error: ${err.stack}`, req);
-    res.status(500).send();
-  });
+const port = 13370;
 
-  io.on('connection', socket => {
-    log(`[socketId:${socket.id}] Connected`);
-    
-    sockets.push(socket);
-    
-    socket.on('disconnecting', reason => {
-      log(`[socketId:${socket.id}] Disconnected with reason: ${reason}`);
-    });
-  });
-  
-  log(`Server running`);
-  
-  process.on('SIGTERM', shutdown);
-  process.on('SIGINT', shutdown);
+log('Configuring server');
 
-  startJobs();
+applyMiddleware(app, io);
+registerRoutes(app);
 
-  httpServer.listen(port);
-})();
+app.get('/api/stop', (req, res) => {
+  res.send();
+  
+  shutdown();
+});
+
+app.get('*', (req, res) => {
+  log(`Default handler hit for '${req.originalUrl}'`, req);
+
+  res.sendFile(`${PATH_CLIENT}/index.html`);
+});
+
+app.use((err, req, res, next) => {
+  log(`Encountered unexpected error: ${err.stack}`, req);
+  res.status(500).send();
+});
+
+log(`Server running`);
+
+startJobs();
+
+httpServer.listen(port);
