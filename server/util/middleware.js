@@ -86,4 +86,11 @@ const applyMiddleware = (app, io) => {
   log('Applied custom middleware');
 };
 
-module.exports = { applyMiddleware };
+const applyFinalMiddleware = app => {
+  app.use((err, req, res, next) => {
+    log(`Encountered unexpected error: ${err.stack}`, req);
+    res.status(500).send();
+  });
+};
+
+module.exports = { applyFinalMiddleware, applyMiddleware };

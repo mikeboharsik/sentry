@@ -6,7 +6,6 @@ const { PATH_SERVER_LOG } = require('./consts');
 const logger = createLogger({
   name: 'logger',
   transports: [
-    new ConsoleTransport(),
     new RotatingFileTransport({
       levels: ['trace', 'debug', 'info', 'warn', 'error'],
       path: PATH_SERVER_LOG,

@@ -16,7 +16,7 @@ const curry = io => {
   const destroySockets = () => {
     sockets.forEach(socket => socket.destroy?.());
 
-    log('Destroyed existing sockets');
+    log(`Destroyed ${sockets.length} existing sockets`);
   }
 
   return {
