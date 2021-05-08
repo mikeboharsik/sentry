@@ -9,6 +9,7 @@ const { startJobs, stopJobs } = require('./util/cronJobs')(io);
 const { log } = require('./util/logger');
 
 const { PATH_CLIENT } = require('./util/consts');
+const { PORT } = require('./util/config');
 
 const { applyMiddleware } = require('./util/middleware');
 const { registerRoutes } = require('./controllers');
@@ -37,8 +38,6 @@ function shutdown() {
 process.on('SIGTERM', shutdown);
 process.on('SIGINT', shutdown);
 
-const port = 13370;
-
 log('Configuring server');
 
 applyMiddleware(app, io);
@@ -61,8 +60,8 @@ app.use((err, req, res, next) => {
   res.status(500).send();
 });
 
-log(`Server running`);
+log(`Running server on port ${PORT}`);
 
 startJobs();
 
-httpServer.listen(port);
+httpServer.listen(PORT);
