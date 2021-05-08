@@ -12,13 +12,13 @@ function rawBody(req, res, next) {
     req.rawBody += chunk;
   });
   req.on('end', function(){
-    try { if(req.rawBody) req.body = JSON.parse(req.rawBody) } catch(e) { console.error(e) }
+    try { if(req.rawBody) req.body = JSON.parse(req.rawBody) } catch(e) { log(e); }
     
     next();
   });
 }
 
-const applyMiddleware = app => {
+const applyMiddleware = (app, io) => {
   app.use(rawBody);
   
   app.use((req, res, next) => {
@@ -30,9 +30,15 @@ const applyMiddleware = app => {
     
     next();
   });
+
+  app.use((req, res, next) => {
+    res.io = io;
+
+    next();
+  });
   
   app.use((req, res, next) => {
-    const { ip, method, originalUrl } = req;
+    const { ip, method } = req;
     
     const isClientLocal = ip.match(/192\.168\.1/);
   

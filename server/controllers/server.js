@@ -1,4 +1,3 @@
-const path = require('path');
 const { PATH_SERVER_LOG } = require('../util/consts');
 
 const log = {

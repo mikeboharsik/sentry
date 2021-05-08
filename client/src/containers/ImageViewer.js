@@ -74,7 +74,7 @@ const ImageViewer = props => {
   }
 
   async function getConfig() {
-    await fetch(getUri('/api/config'))
+    await fetch(getUri('/api/snapshots/config'))
       .then(res => {
         if (!res.ok) throw new Error("Response is not OK");
         return res.json();
