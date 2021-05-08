@@ -1,6 +1,6 @@
-const { getFileNames } = require('../getFileNames');
-const { log } = require('../logger');
-const { PATH_SNAPSHOTS } = require('../consts');
+const { getFileNames } = require('../util/getFileNames');
+const { log } = require('../util/logger');
+const { PATH_SNAPSHOTS } = require('../util/consts');
 
 let latestFile = null;
 

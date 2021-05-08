@@ -1,6 +1,6 @@
 const cron = require('cron').CronJob;
 
-const { log } = require('../logger');
+const { log } = require('../util/logger');
 const emitLatestSnapshotChange = require('./emitLatestSnapshotChange');
 
 const jobs = [];

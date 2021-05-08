@@ -4,7 +4,7 @@ const http = require('http');
 const app = express();
 const httpServer = http.createServer(app);
 const io = require('socket.io')(httpServer, {});
-const { startJobs, stopJobs } = require('./util/cronJobs')(io);
+const { startJobs, stopJobs } = require('./cronJobs')(io);
 
 const { log } = require('./util/logger');
 
