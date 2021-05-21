@@ -2,13 +2,17 @@ const { getFileNames } = require('../util/getFileNames');
 const { log } = require('../util/logger');
 const { PATH_SNAPSHOTS } = require('../util/consts');
 
+const name = 'emitLatestSnapshotChange';
+
 let latestFile = null;
 
 const job = {
-  name: 'emitLatestSnapshotChange',
+  name,
   schedule: '*/5 * * * * *',
-  getHandler: (io) => async () => {
+  getHandler: ({ io }) => async () => {
     try {
+      log(`${name} START`);
+
       const relevantPath = PATH_SNAPSHOTS;
   
       const cur = String((await getFileNames(relevantPath))[0]);
@@ -19,7 +23,9 @@ const job = {
       
       latestFile = cur;
     } catch(e) {
-      log(`Encountered error in scheduled job: ${e}`);
+      log(`Encountered error in scheduled job '${name}': ${e}`);
+    } finally {
+      log(`${name} END`);
     }
   },
 };

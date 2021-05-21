@@ -1,10 +1,11 @@
 const cron = require('cron').CronJob;
 
 const { log } = require('../util/logger');
+const cleanOutdatedGraveyardSnapshots = require('./cleanOutdatedGraveyardSnapshots');
 const emitLatestSnapshotChange = require('./emitLatestSnapshotChange');
 
 const jobs = [];
-const jobTemplates = [emitLatestSnapshotChange];
+const jobTemplates = [cleanOutdatedGraveyardSnapshots, emitLatestSnapshotChange];
 
 const startJobs = () => {
   jobs.forEach(job => {
@@ -24,16 +25,16 @@ const stopJobs = () => {
 
 const curry = io => {
   jobTemplates.forEach(job => {
-    try {
-      const { getHandler, name, schedule } = job;
+    const { getHandler, name, schedule } = job;
 
-      const newJob = new cron(schedule, getHandler(io), null, true, 'America/New_York');
+    try {
+      const newJob = new cron(schedule, getHandler({ io }), null, true, 'America/New_York');
 
       jobs.push(newJob);
 
       log(`Registered background job '${name}'`);
     } catch(e) {
-      log(`Error in creating background jobs: ${e}`);
+      log(`Error creating background job '${name}': ${e}`);
     }
   });
 
