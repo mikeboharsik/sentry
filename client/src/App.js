@@ -3,9 +3,9 @@ import { Route, BrowserRouter as Router, Switch } from 'react-router-dom';
 import socketIOClient from 'socket.io-client';
 import GlobalContext from './contexts/GlobalContext';
 
-import Config from './containers/Config';
-import ImageViewer from './containers/ImageViewer';
-import NotFound from './containers/NotFound';
+import Config from './components/Config';
+import ImageViewer from './components/ImageViewer';
+import NotFound from './components/NotFound';
 
 const App = props => {
   const [socketClient, setSocketClient] = useState(null);

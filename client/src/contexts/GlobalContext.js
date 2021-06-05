@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
+import React from 'react';
 
-export const GlobalContext = React.createContext({ test: true });
+export const GlobalContext = React.createContext();
 
 export default GlobalContext;

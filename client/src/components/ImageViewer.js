@@ -35,7 +35,7 @@ const ImageViewer = props => {
   const [imgName, setImgName] = useState(undefined);
   const [cont, setCont] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [config, setConfig] = useState(null);
+  const [config, setConfig] = useState({});
 
   async function getImage() {
     await fetch(getUri(`/api/snapshots/${index}`), { headers: { 'Content-Type': 'application/json', Pass: sessionStorage.pass } })
@@ -140,14 +140,20 @@ const ImageViewer = props => {
   
   const leftArrow = (
     <div
+      data-cy="leftArrow"
+      onClick={() => setIndex(idx => idx + 1)}
       style={{ ...buttonStyle, opacity: leftOpacity, cursor: leftCursor }}
-      onClick={() => setIndex(idx => idx + 1)}>{'←'}
+    >
+      {'←'}
     </div>
   );
   const rightArrow = (
     <div
+      data-cy="rightArrow"
+      onClick={() => setIndex(idx => idx - 1)}
       style={{ ...buttonStyle, opacity: rightOpacity, cursor: rightCursor }}
-      onClick={() => setIndex(idx => idx - 1)}>{'→'}
+    >
+      {'→'}
     </div>
   );
   
@@ -180,7 +186,21 @@ const ImageViewer = props => {
         lastReadContentColor = '#f00';
       }
     }
-    const lastReadContent = lastRead ? <a style={{ color: lastReadContentColor }} target="_blank" rel='noreferrer' href={getUri('/api/server/log')}>{`Last read: ${lastRead}`}</a> : null;
+
+    let lastReadContent = null;
+    if (lastRead) {
+      lastReadContent = (
+        <a
+          data-cy="lastRead"
+          href={getUri('/api/server/log')}
+          rel='noreferrer'
+          style={{ color: lastReadContentColor }}
+          target="_blank"
+        >
+          {`Last read: ${lastRead}`}
+        </a>
+      );
+    }
     
     middle = (
       <div style={{ width: imgWidth, height: imgHeight }}>
@@ -190,19 +210,29 @@ const ImageViewer = props => {
           src={img}
           title={`${imgName} (${index})`}
         />
-        <div style={{
-          position: 'relative',
-          color: '#aaa',
-          bottom: '2em',
-          textShadow: 'black 0px 0px 2px',
-          paddingLeft: '8px',
-          cursor: 'default',
-          userSelect: 'none',
-        }}>
+        <div 
+          data-cy="imageOverlay"
+          style={{
+            position: 'relative',
+            color: '#aaa',
+            bottom: '2em',
+            textShadow: 'black 0px 0px 2px',
+            paddingLeft: '8px',
+            cursor: 'default',
+            userSelect: 'none',
+          }}
+        >
           {imgName}
         </div>
+
         {deleteButton}
-        <div style={{ color: lastReadContentColor }}>{lastReadContent}</div>
+
+        <div
+          data-cy="lastReadContainer"
+          style={{ color: lastReadContentColor }}
+        >
+          {lastReadContent}
+        </div>
       </div>
     );
   } else {
@@ -212,8 +242,8 @@ const ImageViewer = props => {
   }
   
   const configLink = (
-    <div style={{ position: 'absolute', bottom: '1em', right: '1em' }}>
-      <Link style={{ color: '#aaa', textDecoration: 'none' }} to="/config">O</Link>
+    <div data-cy="configLinkContainer" style={{ position: 'absolute', bottom: '1em', right: '1em' }}>
+      <Link data-cy="configLink" style={{ color: '#aaa', textDecoration: 'none' }} to="/config">O</Link>
     </div>
   );
 
