@@ -1,3 +1,4 @@
+import { default as getLastReadFormat } from '../util/getLastReadFormat';
 import * as snapshotMocks from '../mocks/snapshots';
 
 describe('Landing page (local)', () => {
@@ -40,33 +41,7 @@ describe('Landing page (local)', () => {
 
   describe('base state with recent lastRead', () => {
     beforeEach(() => {
-      const now = new Date();
-
-      let year = now.getFullYear();
-      let month = now.getUTCMonth() + 1;
-      let date = now.getUTCDate();
-      let hours = now.getUTCHours();
-      let minutes = now.getUTCMinutes();
-      let seconds = now.getUTCSeconds();
-      let milliseconds = now.getUTCMilliseconds();
-
-      if (month < 10) {
-        month = `0${month}`;
-      }
-
-      if (hours < 10) {
-        hours = `0${hours}`;
-      }
-
-      if (minutes < 10) {
-        minutes = `0${minutes}`;
-      }
-
-      if (seconds < 10) {
-        seconds = `0${seconds}`;
-      }
-
-      const lastRead = `${year}-${month}-${date} ${hours}:${minutes}:${seconds}.${milliseconds}000`;
+      const lastRead = getLastReadFormat();
 
       snapshotMocks.getSnapshotsConfig({ lastRead });
     });
