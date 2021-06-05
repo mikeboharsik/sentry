@@ -1,13 +1,5 @@
 import { default as configFixture } from '../fixtures/config.json';
-import { default as snapshot0 } from '../fixtures/snapshot_0.json';
-import { default as snapshot1 } from '../fixtures/snapshot_1.json';
-import { default as snapshot2 } from '../fixtures/snapshot_2.json';
-
-const snapshots = {
-  snapshot0,
-  snapshot1,
-  snapshot2,
-};
+import { default as snapshotMocks } from '../fixtures/snapshot.json';
 
 export const getSnapshot = () => {
   const pathPattern = /.*\/api\/snapshots\/(\d+)/;
@@ -19,7 +11,7 @@ export const getSnapshot = () => {
     },
     (req) => { 
       const num = req.url.match(pathPattern)[1];
-      const body = snapshots[`snapshot${num}`];
+      const body = snapshotMocks[num];
 
       return req.reply({ body });
     },
