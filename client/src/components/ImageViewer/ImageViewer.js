@@ -1,8 +1,8 @@
 import { useContext, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import GlobalContext from '../contexts/GlobalContext';
+import GlobalContext from '../../contexts/GlobalContext';
 
-import { getUri } from '../util/getUri';
+import { getUri } from '../../util/getUri';
 
 const imgWidth = 768;
 const imgHeight = 756;
