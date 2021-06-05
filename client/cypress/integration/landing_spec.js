@@ -2,8 +2,8 @@ import * as snapshotMocks from '../mocks/snapshots';
 
 describe('Landing page (local)', () => {
   beforeEach(() => {
-    snapshotMocks.getSnapshotsConfig();
     snapshotMocks.getSnapshot();
+    snapshotMocks.getSnapshotsConfig();
   });
 
   it('sends expected API requests', () => {
@@ -14,7 +14,7 @@ describe('Landing page (local)', () => {
   });
 
   it('image overlay exists with expected properties', () => {
-    cy.get('[data-cy="imageOverlay"]').contains('1/1/2000, 12:00:00 AM');
+    cy.get('[data-cy="imageOverlay"]').contains('1/1/2000, 12:02:00 AM');
   });
 
   it('lastRead element exists with expected properties', () => {
@@ -38,15 +38,29 @@ describe('Landing page (local)', () => {
 
   it('right arrow becomes visible after clicking left arrow', () => {
     cy.get('[data-cy="leftArrow"]').click();
-
     cy.get('[data-cy="rightArrow"]')
       .should('be.visible');
   });
 
-  it('right arrow becomes invisible after clicking right arrow', () => {
-    cy.get('[data-cy="rightArrow"]').click();
+  it('snapshot 1 is displayed', () => {
+    cy.get('[data-cy="imageOverlay"]').contains('1/1/2000, 12:01:00 AM');
+  })
 
+  it('snapshot 2 is displayed after clicking left arrow', () => {
+    cy.get('[data-cy="leftArrow"]').click();
+    cy.get('[data-cy="rightArrow"]')
+      .should('be.visible');
+    cy.get('[data-cy="imageOverlay"]').contains('1/1/2000, 12:00:00 AM');
+  })
+
+  it('right arrow becomes invisible after clicking right arrow twice', () => {
+    cy.get('[data-cy="rightArrow"]').click()
+      .should('be.visible');
+    cy.get('[data-cy="imageOverlay"]').contains('1/1/2000, 12:01:00 AM');
+    
+    cy.get('[data-cy="rightArrow"]').click();
     cy.get('[data-cy="rightArrow"]')
       .should('not.be.visible');
+    cy.get('[data-cy="imageOverlay"]').contains('1/1/2000, 12:02:00 AM');
   });
 });
