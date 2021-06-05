@@ -14,9 +14,19 @@ const Config = props => {
   const history = useHistory();
 
   return (
-    <div>
-      <input id={passwordInputId} type="password"></input>
-      <button onClick={() => commitHandler({ history })}>Commit</button>
+    <div data-cy="configContainer">
+      <input
+        data-cy="configInput"
+        id={passwordInputId}
+        type="password"
+      />
+
+      <button
+        data-cy="configButton"
+        onClick={() => commitHandler({ history })}
+      >
+        Commit
+      </button>
     </div>
   );
 };

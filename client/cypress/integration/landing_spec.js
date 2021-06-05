@@ -7,7 +7,7 @@ describe('Landing page (local)', () => {
   });
 
   it('sends expected API requests', () => {
-    cy.visit('http://localhost:3000/');
+    cy.visit('/');
 
     cy.wait('@getSnapshot');
     cy.wait('@getSnapshotsConfig');
@@ -62,5 +62,15 @@ describe('Landing page (local)', () => {
     cy.get('[data-cy="rightArrow"]')
       .should('not.be.visible');
     cy.get('[data-cy="imageOverlay"]').contains('1/1/2000, 12:02:00 AM');
+  });
+
+  it('clicking config button navigates to config page', () => {
+    cy.get('[data-cy="configLink"').click();
+
+    cy.location('pathname').should('match', /\/config/);
+
+    cy.get('[data-cy="configContainer"]').should('be.visible');
+    cy.get('[data-cy="configInput"]').should('be.visible');
+    cy.get('[data-cy="configButton"]').should('be.visible');
   });
 });
