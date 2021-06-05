@@ -181,7 +181,10 @@ const ImageViewer = props => {
     let lastReadContentColor = '#aaa';
     const lastReadDate = new Date(`${lastRead}Z`);
     if (lastRead && lastReadDate) {
-      const lastReadTooLong = Math.abs(new Date() - lastReadDate) > 15000;
+      const now = new Date();
+      const diff = Math.abs(now - lastReadDate);
+      const lastReadTooLong = diff > 15000;
+      console.log({ now, lastReadDate, lastReadTooLong, diff });
       if (lastReadTooLong) {
         lastReadContentColor = '#f00';
       }

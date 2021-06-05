@@ -7,6 +7,12 @@ describe('Configuration page', () => {
       .invoke('clear');
   });
 
+  after(() => {
+    cy.window()
+      .its('sessionStorage')
+      .invoke('clear');
+  });
+
   it('session storage is clear', () => {
     cy.window()
       .its('sessionStorage')
