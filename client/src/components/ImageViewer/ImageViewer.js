@@ -1,4 +1,4 @@
-import { useContext, useEffect, useRef, useState } from 'react';
+import React, { useContext, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import GlobalContext from '../../contexts/GlobalContext';
 
@@ -27,7 +27,7 @@ function useFreshRef(val) {
   return ref;
 }
 
-const ImageViewer = props => {
+const ImageViewer = () => {
   const { socketClient } = useContext(GlobalContext);
 
   const [index, setIndex] = useState(0);
@@ -63,7 +63,7 @@ const ImageViewer = props => {
         setImgName(`${result.toLocaleString()}`);
       })
       .catch(e => { setImg(null); console.error(e); });
-  };
+  }
   
   async function deleteImage() {
     await fetch(getUri(`/api/snapshots/${index}`), { method: 'DELETE' })
@@ -92,12 +92,12 @@ const ImageViewer = props => {
   
   useEffect(() => {
     if (socketClient) {
-      socketClient.on('latestFile', data => {
+      socketClient.on('latestFile', () => {
         setIndex(0);
         getImageRef.current();
       });
 
-      socketClient.on('deleted', data => {
+      socketClient.on('deleted', () => {
         getImageRef.current();
       });
     }

@@ -5,7 +5,7 @@ import GlobalContext from './contexts/GlobalContext';
 
 import { Config, ImageViewer, NotFound } from './components';
 
-const App = props => {
+const App = () => {
   const [socketClient, setSocketClient] = useState(null);
 
   useEffect(() => {

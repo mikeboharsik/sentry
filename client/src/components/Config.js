@@ -1,3 +1,4 @@
+import React from 'react';
 import { useHistory } from 'react-router-dom';
 
 const passwordInputId = 'passwordInputId';
@@ -10,7 +11,7 @@ const commitHandler = ({ history }) => {
   history.push('/');
 };
 
-const Config = props => {
+const Config = () => {
   const history = useHistory();
 
   return (
