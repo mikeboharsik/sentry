@@ -184,7 +184,6 @@ const ImageViewer = () => {
       const now = new Date();
       const diff = Math.abs(now - lastReadDate);
       const lastReadTooLong = diff > 15000;
-      console.log({ now, lastReadDate, lastReadTooLong, diff });
       if (lastReadTooLong) {
         lastReadContentColor = '#f00';
       }

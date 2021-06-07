@@ -1,33 +1,13 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { Route, BrowserRouter as Router, Switch } from 'react-router-dom';
-import socketIOClient from 'socket.io-client';
-import GlobalContext from './contexts/GlobalContext';
 
+import GlobalContext from './contexts/GlobalContext';
 import { Config, ImageViewer, NotFound } from './components';
+import getSocketClient from './util/getSocketClient';
+
+const socketClient = getSocketClient();
 
 const App = () => {
-  const [socketClient, setSocketClient] = useState(null);
-
-  useEffect(() => {
-    if (!socketClient) {
-      const socket = socketIOClient();
-
-      socket.on('connect', () => {
-        const { id } = socket;
-
-        console.log(`Socket connected: ${id}`);
-      });
-
-      socket.on('disconnect', () => {
-        const { id } = socket;
-
-        console.log(`Socket disconnected: ${id}`);
-      });
-
-      setSocketClient(socket);
-    }
-  }, [socketClient]);
-
   return (
     <GlobalContext.Provider value={{ socketClient }}>
       <Router>
