@@ -4,6 +4,8 @@ import GlobalContext from '../../contexts/GlobalContext';
 
 import { getUri } from '../../util/getUri';
 
+import { PauseIcon, PlayIcon } from '../Icons';
+
 const imgWidth = 768;
 const imgHeight = 756;
 
@@ -21,6 +23,21 @@ const buttonStyle = {
   zIndex: 1,
 };
 
+const pauseStateButtonStyle = {
+  backgroundColor: 'white',
+  borderRadius: '50%',
+  bottom: '48.5em',
+  cursor: 'pointer',
+  left: '0.25em',
+  position: 'relative',
+};
+
+const pauseStateButtonProps = {
+  height: '32px',
+  style: pauseStateButtonStyle,
+  width: '32px',
+};
+
 function useFreshRef(val) {
   const ref = useRef();
   ref.current = val;
@@ -36,8 +53,13 @@ const ImageViewer = () => {
   const [cont, setCont] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [config, setConfig] = useState({});
+  const [isRequestInProgress, setIsRequestInProgress] = useState(false);
 
   async function getImage() {
+    if (isRequestInProgress) return console.error("Request in progress");
+
+    setIsRequestInProgress(true);
+
     await fetch(getUri(`/api/snapshots/${index}`), { headers: { 'Content-Type': 'application/json', Pass: sessionStorage.pass } })
       .then(res => { if (!res.ok) { throw new Error("Response is not OK"); } else { return res; } })
       .then(res => { 
@@ -62,25 +84,51 @@ const ImageViewer = () => {
         
         setImgName(`${result.toLocaleString()}`);
       })
-      .catch(e => { setImg(null); console.error(e); });
+      .catch(e => { setImg(null); console.error(e); })
+      .finally(() => setIsRequestInProgress(false));
   }
   
   async function deleteImage() {
-    await fetch(getUri(`/api/snapshots/${index}`), { method: 'DELETE' })
+    if (isRequestInProgress) return console.error("Request in progress");
+
+    setIsRequestInProgress(true);
+
+    await fetch(getUri(`/api/snapshots/${index}`), { method: 'DELETE', headers: { Pass: sessionStorage.pass } })
       .then(res => {
         if (!res.ok) throw new Error("Response is not OK");
       })
-      .catch(e => console.error(e));
+      .catch(e => console.error(e))
+      .finally(() => setIsRequestInProgress(false));
   }
 
   async function getConfig() {
+    if (isRequestInProgress) return console.error("Request in progress");
+
+    setIsRequestInProgress(true);
+
     await fetch(getUri('/api/snapshots/config'), { headers: { Pass: sessionStorage.pass } })
       .then(res => {
         if (!res.ok) throw new Error("Response is not OK");
         return res.json();
       })
       .then(json => setConfig(json))
-      .catch(e => console.error(e));
+      .catch(e => console.error(e))
+      .finally(() => setIsRequestInProgress(false));
+  }
+
+  async function updateConfig(newConfig) {
+    if (isRequestInProgress) return console.error("Request in progress");
+
+    setIsRequestInProgress(true);
+
+    await fetch(getUri('/api/snapshots/config'), { method: 'PUT', body: JSON.stringify(newConfig), headers: { Pass: sessionStorage.pass } })
+      .then(res => {
+        if (!res.ok) throw new Error("Response is not OK");
+        return res.json();
+      })
+      .then(json => setConfig(json))
+      .catch(e => console.error(e))
+      .finally(() => setIsRequestInProgress(false));
   }
   
   const getImageRef = useFreshRef(getImage);
@@ -163,7 +211,7 @@ const ImageViewer = () => {
       <div
         style={{
           position: 'relative',
-          bottom: '49em',
+          bottom: '51.25em',
           left: '47.2em',
           width: '1px',
           height: '1px',
@@ -176,6 +224,18 @@ const ImageViewer = () => {
         X
       </div>
     ) : null;
+
+    const { isPaused } = config;
+    const PauseStateButtonComp = isPaused ? PauseIcon : PlayIcon;
+
+    const pauseStateButton = (
+      <PauseStateButtonComp
+        {...pauseStateButtonProps}
+        onClick={() => {
+          updateConfig({ ...config, isPaused: !isPaused });
+        }}
+      />
+    );
 
     const { lastRead } = config;
     let lastReadContentColor = '#aaa';
@@ -227,11 +287,16 @@ const ImageViewer = () => {
           {imgName}
         </div>
 
+        {pauseStateButton}
         {deleteButton}
 
         <div
           data-cy="lastReadContainer"
-          style={{ color: lastReadContentColor }}
+          style={{
+            color: lastReadContentColor,
+            position: 'relative',
+            top: '-2em',
+          }}
         >
           {lastReadContent}
         </div>

@@ -1,5 +1,5 @@
 const path = require('path');
-const { mkdir, readdir, readFile, rename } = require('fs').promises;
+const { mkdir, readdir, readFile, rename, writeFile } = require('fs').promises;
 
 const { PATH_BASE, PATH_CONFIG, PATH_GRAVEYARD, PATH_SNAPSHOTS, PATH_SNAPSHOTS_LOG } = require('../util/consts');
 const { getFileNames } = require('../util/getFileNames');
@@ -111,7 +111,7 @@ const patchConfig = {
   pattern: '/api/snapshots/config*',
   handler: async (req, res) => {
     const data = await readFile(PATH_CONFIG);
-  
+
     const json = JSON.parse(data);
     const paths = req.params[0].split('/').reduce((acc, cur) => { if (cur) acc.push(cur); return acc; }, []);
     let result = json;
@@ -148,7 +148,22 @@ const patchConfig = {
     result = JSON.stringify(json, null, '  ');
     
     await writeFile(PATH_CONFIG, result, { encoding: 'utf8' });
-  
+
+    res.set('Content-Type', 'application/json');
+    res.send(result);
+  },
+};
+
+const putConfig = {
+  method: 'put',
+  pattern: '/api/snapshots/config*',
+  handler: async (req, res) => {
+    const { rawBody } = req;
+    
+    result = JSON.stringify(JSON.parse(rawBody), null, '  ');
+    
+    await writeFile(PATH_CONFIG, result, { encoding: 'utf8' });
+
     res.set('Content-Type', 'application/json');
     res.send(result);
   },
@@ -192,6 +207,7 @@ module.exports = {
   routes: [
     getConfig,
     patchConfig,
+    putConfig,
     deleteConfig,
     getBase,
     getLog,

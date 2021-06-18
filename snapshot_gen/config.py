@@ -43,6 +43,7 @@ defaultConfig = {
   'decimationX': defaultDecimationX,
   'decimationY': defaultDecimationY,
   'height': defaultHeight,
+  'isPaused': False,
   'lastRequestProcessingTime': 0,
   'outputHeight': int(defaultRes[1] * defaultCrop[2]),
   'outputWidth': int(defaultRes[0] * defaultCrop[3]),

@@ -21,6 +21,7 @@
   "decimationX": 8,
   "decimationY": 8,
   "height": 1080,
+  "isPaused": false,
   "lastRead": "2000-01-01 05:00:00.000000",
   "lastRequestProcessingTime": 0,
   "outputHeight": 756,

@@ -21,7 +21,7 @@ describe('Landing page (local)', () => {
   
     it('lastRead element exists with expected properties', () => {
       cy.get('[data-cy="lastRead"]')
-        .should('exist')
+        .should('be.visible')
         .and('have.css', 'color', 'rgb(255, 0, 0)');
   
       cy.get('[data-cy="lastRead"]').contains('Last read: 2000-01-01 05:00:00.000000');
@@ -52,6 +52,32 @@ describe('Landing page (local)', () => {
       cy.get('[data-cy="lastRead"]')
         .should('exist')
         .and('not.have.css', 'color', 'rgb(255, 0, 0)');
+    });
+  });
+
+  describe('base state with isPaused permutations', () => {
+    it('isPaused is false and no indicator appears', () => {
+      snapshotMocks.getSnapshotsConfig({ isPaused: false });
+
+      cy.visit('/');
+      cy.wait('@getSnapshotsConfig');
+
+      cy.get('[data-cy="PlayIcon"]')
+        .should('exist');
+      cy.get('[data-cy="PauseIcon"]')
+        .should('not.exist');
+    });
+
+    it('isPaused is true and indicator appears', () => {
+      snapshotMocks.getSnapshotsConfig({ isPaused: true });
+
+      cy.visit('/');
+      cy.wait('@getSnapshotsConfig');
+
+      cy.get('[data-cy="PlayIcon"]')
+        .should('not.exist');
+      cy.get('[data-cy="PauseIcon"]')
+        .should('exist');
     });
   });
 

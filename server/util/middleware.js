@@ -46,6 +46,7 @@ const applyMiddleware = (app, io) => {
       res.set('X-Authenticated', 'true')
       res.set('Access-Control-Allow-Headers', '*');
       res.set('Access-Control-Allow-Origin', '*');
+      res.set('Access-Control-Allow-Methods', '*');
       req.isAuthenticated = true;
     } else {
       const pass = req.header('pass');

@@ -97,39 +97,42 @@ def snapshots(pathSnapshots, camera, continuous = False, name = "temp", baseSum 
   stream = io.BytesIO()
 
   for frame in camera.capture_continuous(stream, format='jpeg', resize = outSize, quality = quality, use_video_port = rapid, burst = burst):
-    frame.seek(0)
-    streambytes = frame.read()
-    frame.seek(0)
-    
-    capture_end = datetime.datetime.utcnow()
-    
-    sum_start = datetime.datetime.utcnow()
-    bytes = numpy.asarray(bytearray(streambytes), numpy.uint8)
-    img = cv2.imdecode(bytes, cv2.IMREAD_COLOR)
-    sum = imgsum(img, configuration)
-    sum_end = datetime.datetime.utcnow()
-    
-    diff = abs(baseSum - sum)
-    percent = diff / baseSum
-    save = percent > tolerance
-    
-    frame.truncate()    
-    
-    if not continuous or save:
-      imgname = f"{name}.jpg"
+    if configuration['isPaused']:
+      streambytes = None
+    else:
+      frame.seek(0)
+      streambytes = frame.read()
+      frame.seek(0)
       
-      if name == "temp":
-        final = f"{pathSnapshots}/{currentTimeFileName()}"
-      else:
-        final = f"./{imgname}"
+      capture_end = datetime.datetime.utcnow()
       
-      with open(final, 'wb') as f:
-        f.write(streambytes)
+      sum_start = datetime.datetime.utcnow()
+      bytes = numpy.asarray(bytearray(streambytes), numpy.uint8)
+      img = cv2.imdecode(bytes, cv2.IMREAD_COLOR)
+      sum = imgsum(img, configuration)
+      sum_end = datetime.datetime.utcnow()
       
-      log(f"Saved snapshot {final!r} with a difference of {percent}")
+      diff = abs(baseSum - sum)
+      percent = diff / baseSum
+      save = percent > tolerance
       
-      if not save:
-        break
+      frame.truncate()    
+      
+      if not continuous or save:
+        imgname = f"{name}.jpg"
+        
+        if name == "temp":
+          final = f"{pathSnapshots}/{currentTimeFileName()}"
+        else:
+          final = f"./{imgname}"
+        
+        with open(final, 'wb') as f:
+          f.write(streambytes)
+        
+        log(f"Saved snapshot {final!r} with a difference of {percent}")
+        
+        if not save:
+          break
     
     configuration = config.process(pathConfig, streambytes)
     if configuration['requests']['reinitialize']:
