@@ -13,6 +13,10 @@ export const getSnapshot = () => {
       const num = req.url.match(pathPattern)[1];
       const body = snapshotMocks[num];
 
+      if (!body) {
+        return req.reply({ statusCode: 404 });
+      }
+
       return req.reply({ body });
     },
   ).as('getSnapshot');
@@ -31,4 +35,9 @@ export const getSnapshotsConfig = (overrides = null) => {
       body,
     },
   ).as('getSnapshotsConfig');
+};
+
+export const all = () => {
+  getSnapshot();
+  getSnapshotsConfig();
 };

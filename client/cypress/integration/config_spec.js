@@ -29,8 +29,7 @@ describe('Configuration page', () => {
   });
 
   it('entering text and clicking button sets sessionStorage.pass and navigates to landing page', () => {
-    snapshotMocks.getSnapshot();
-    snapshotMocks.getSnapshotsConfig();
+    snapshotMocks.all();
 
     const newPassword = 'NEW PASSWORD';
 
