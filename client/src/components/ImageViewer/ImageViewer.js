@@ -9,6 +9,14 @@ import { PauseIcon, PlayIcon } from '../Icons';
 const imgWidth = 768;
 const imgHeight = 756;
 
+const imageViewerStyle = {
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  width: '100%',
+  height: '100vh'
+};
+
 const buttonStyle = {
   width: 32,
   height: imgHeight,
@@ -28,7 +36,7 @@ const pauseStateButtonStyle = {
   borderRadius: '50%',
   bottom: '48.5em',
   cursor: 'pointer',
-  left: '0.25em',
+  left: '50%',
   position: 'relative',
 };
 
@@ -318,13 +326,7 @@ const ImageViewer = () => {
     <div
       ref={cont => { setCont(cont); }}
       onKeyUp={keyHandler}
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        width: '100%',
-        height: '100vh'
-      }}
+      style={imageViewerStyle}
       tabIndex={0}
     >
       {leftArrow}
