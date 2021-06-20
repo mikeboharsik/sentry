@@ -233,17 +233,20 @@ const ImageViewer = () => {
       </div>
     ) : null;
 
-    const { isPaused } = config;
-    const PauseStateButtonComp = isPaused ? PauseIcon : PlayIcon;
+    let pauseStateButton = null;
+    if (isAuthenticated) {
+      const { isPaused } = config;
+      const PauseStateButtonComp = isPaused ? PauseIcon : PlayIcon;
 
-    const pauseStateButton = (
-      <PauseStateButtonComp
-        {...pauseStateButtonProps}
-        onClick={() => {
-          updateConfig({ ...config, isPaused: !isPaused });
-        }}
-      />
-    );
+      pauseStateButton = (
+        <PauseStateButtonComp
+          {...pauseStateButtonProps}
+          onClick={() => {
+            updateConfig({ ...config, isPaused: !isPaused });
+          }}
+        />
+      );
+    }
 
     const { lastRead } = config;
     let lastReadContentColor = '#aaa';
@@ -303,7 +306,7 @@ const ImageViewer = () => {
           style={{
             color: lastReadContentColor,
             position: 'relative',
-            top: '-2em',
+            top: isAuthenticated ? '-3em' : '-1em',
           }}
         >
           {lastReadContent}

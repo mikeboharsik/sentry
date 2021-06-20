@@ -54,9 +54,10 @@ const applyMiddleware = (app, io) => {
     }
     
     switch(method.toUpperCase()) {
-      case 'POST':
-      case 'PATCH':
       case 'DELETE':
+      case 'PATCH':
+      case 'POST':
+      case 'PUT':
         if (isClientLocal) {
           next();
         } else {
@@ -70,7 +71,8 @@ const applyMiddleware = (app, io) => {
   
   app.use((req, res, next) => {
     const authPatterns = [
-      '/api/snapshots/*'
+      '/api/snapshots/*',
+      '/api/config*',
     ];
   
     const { isAuthenticated, originalUrl } = req;
