@@ -99,6 +99,8 @@ def snapshots(pathSnapshots, camera, continuous = False, name = "temp", baseSum 
   for frame in camera.capture_continuous(stream, format='jpeg', resize = outSize, quality = quality, use_video_port = rapid, burst = burst):
     if configuration['isPaused']:
       streambytes = None
+      frame.seek(0)
+      frame.truncate() # avoid memory 'leak'
     else:
       frame.seek(0)
       streambytes = frame.read()
