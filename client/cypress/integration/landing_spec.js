@@ -43,7 +43,7 @@ describe('Landing page (local)', () => {
     beforeEach(() => {
       const lastRead = getLastReadFormat();
 
-      snapshotMocks.getSnapshotsConfig({ lastRead });
+      snapshotMocks.getSnapshotsConfig({ body: { lastRead } });
     });
 
     it('lastRead text is not red', () => {
@@ -55,9 +55,38 @@ describe('Landing page (local)', () => {
     });
   });
 
-  describe('base state with isPaused permutations', () => {
+  describe('base unauthenticated state with isPaused permutations', () => {
     it('isPaused is false and no indicator appears', () => {
-      snapshotMocks.getSnapshotsConfig({ isPaused: false });
+      snapshotMocks.getSnapshot({ headers: { 'X-Authenticated': '' } });
+      snapshotMocks.getSnapshotsConfig({ body: { isPaused: false } });
+
+      cy.visit('/');
+      cy.wait('@getSnapshotsConfig');
+
+      cy.get('[data-cy="PlayIcon"]')
+        .should('not.exist');
+      cy.get('[data-cy="PauseIcon"]')
+        .should('not.exist');
+    });
+
+    it('isPaused is true and no indicator appears', () => {
+      snapshotMocks.getSnapshot({ headers: { 'X-Authenticated': '' } });
+      snapshotMocks.getSnapshotsConfig({ body: { isPaused: true } });
+
+      cy.visit('/');
+      cy.wait('@getSnapshotsConfig');
+
+      cy.get('[data-cy="PlayIcon"]')
+        .should('not.exist');
+      cy.get('[data-cy="PauseIcon"]')
+        .should('not.exist');
+    });
+  });
+
+  describe('base authenticated state with isPaused permutations', () => {
+    it('isPaused is false and play button appears', () => {
+      snapshotMocks.getSnapshot({ headers: { 'X-Authenticated': 'true' } });
+      snapshotMocks.getSnapshotsConfig({ body: { isPaused: false } });
 
       cy.visit('/');
       cy.wait('@getSnapshotsConfig');
@@ -68,8 +97,9 @@ describe('Landing page (local)', () => {
         .should('not.exist');
     });
 
-    it('isPaused is true and indicator appears', () => {
-      snapshotMocks.getSnapshotsConfig({ isPaused: true });
+    it('isPaused is true and pause button appears', () => {
+      snapshotMocks.getSnapshot({ headers: { 'X-Authenticated': 'true' } });
+      snapshotMocks.getSnapshotsConfig({ body: { isPaused: true } });
 
       cy.visit('/');
       cy.wait('@getSnapshotsConfig');

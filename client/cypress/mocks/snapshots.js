@@ -1,8 +1,13 @@
 import { default as configFixture } from '../fixtures/config.json';
 import { default as snapshotMocks } from '../fixtures/snapshot.json';
 
-export const getSnapshot = () => {
+export const getSnapshot = (overrides = {}) => {
   const pathPattern = /.*\/api\/snapshots\/(\d+)/;
+
+  let headers = {};
+  if (overrides.headers) {
+    headers = overrides.headers;
+  }
 
   cy.intercept(
     {
@@ -17,22 +22,27 @@ export const getSnapshot = () => {
         return req.reply({ statusCode: 404 });
       }
 
-      return req.reply({ body });
+      return req.reply({ body, headers });
     },
   ).as('getSnapshot');
 };
 
-export const getSnapshotsConfig = (overrides = null) => {
+export const getSnapshotsConfig = (overrides = {}) => {
   let body = configFixture;
+  if (overrides.body) {
+    body = { ...configFixture, ...overrides.body };
+  }
 
-  if (overrides) {
-    body = { ...configFixture, ...overrides };
+  let headers = {};
+  if (overrides.headers) {
+    headers = overrides.headers;
   }
 
   cy.intercept(
     /.*\/api\/snapshots\/config/,
     {
       body,
+      headers,
     },
   ).as('getSnapshotsConfig');
 };

@@ -5,6 +5,7 @@ import GlobalContext from '../../contexts/GlobalContext';
 import { getUri } from '../../util/getUri';
 
 import { PauseIcon, PlayIcon } from '../Icons';
+import { default as LastReadContainer } from './LastReadContainer';
 
 const imgWidth = 768;
 const imgHeight = 756;
@@ -61,14 +62,17 @@ const ImageViewer = () => {
   const [cont, setCont] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [config, setConfig] = useState({});
-  const [isRequestInProgress, setIsRequestInProgress] = useState(false);
+  const [requestsInProgress, setRequestsInProgress] = useState({});
 
   async function getImage() {
-    if (isRequestInProgress) return console.error("Request in progress");
+    const fetchData = { method: 'GET', uri: `/api/snapshots/${index}` };
+    fetchData.key = `${fetchData.uri}:${fetchData.method}`;
 
-    setIsRequestInProgress(true);
+    const isRequestInProgress = requestsInProgress[fetchData.key];
+    if (isRequestInProgress) return console.error("Request in progress", fetchData);
+    setRequestsInProgress(cur => ({ ...cur, [fetchData.key]: true }));
 
-    await fetch(getUri(`/api/snapshots/${index}`), { headers: { 'Content-Type': 'application/json', Pass: sessionStorage.pass } })
+    await fetch(getUri(fetchData.uri), { method: fetchData.method, headers: { 'Content-Type': 'application/json', Pass: sessionStorage.pass } })
       .then(res => { if (!res.ok) { throw new Error("Response is not OK"); } else { return res; } })
       .then(res => { 
         const { headers } = res;
@@ -93,50 +97,59 @@ const ImageViewer = () => {
         setImgName(`${result.toLocaleString()}`);
       })
       .catch(e => { setImg(null); console.error(e); })
-      .finally(() => setIsRequestInProgress(false));
+      .finally(() => setRequestsInProgress(cur => ({ ...cur, [fetchData.key]: false })));
   }
   
   async function deleteImage() {
-    if (isRequestInProgress) return console.error("Request in progress");
+    const fetchData = { method: 'DELETE', uri: `/api/snapshots/${index}` };
+    fetchData.key = `${fetchData.uri}:${fetchData.method}`;
 
-    setIsRequestInProgress(true);
+    const isRequestInProgress = requestsInProgress[fetchData.key];
+    if (isRequestInProgress) return console.error("Request in progress", fetchData);
+    setRequestsInProgress(cur => ({ ...cur, [fetchData.key]: true }));
 
-    await fetch(getUri(`/api/snapshots/${index}`), { method: 'DELETE', headers: { Pass: sessionStorage.pass } })
+    await fetch(getUri(fetchData.uri), { method: fetchData.method, headers: { Pass: sessionStorage.pass } })
       .then(res => {
         if (!res.ok) throw new Error("Response is not OK");
       })
       .catch(e => console.error(e))
-      .finally(() => setIsRequestInProgress(false));
+      .finally(() => setRequestsInProgress(cur => ({ ...cur, [fetchData.key]: false })));
   }
 
   async function getConfig() {
-    if (isRequestInProgress) return console.error("Request in progress");
+    const fetchData = { method: 'GET', uri: `/api/snapshots/config` };
+    fetchData.key = `${fetchData.uri}:${fetchData.method}`;
 
-    setIsRequestInProgress(true);
+    const isRequestInProgress = requestsInProgress[fetchData.key];
+    if (isRequestInProgress) return console.error("Request in progress", fetchData);
+    setRequestsInProgress(cur => ({ ...cur, [fetchData.key]: true }));
 
-    await fetch(getUri('/api/snapshots/config'), { headers: { Pass: sessionStorage.pass } })
+    await fetch(getUri(fetchData.uri), { method: fetchData.method, headers: { Pass: sessionStorage.pass } })
       .then(res => {
         if (!res.ok) throw new Error("Response is not OK");
         return res.json();
       })
       .then(json => setConfig(json))
       .catch(e => console.error(e))
-      .finally(() => setIsRequestInProgress(false));
+      .finally(() => setRequestsInProgress(cur => ({ ...cur, [fetchData.key]: false })));
   }
 
   async function updateConfig(newConfig) {
-    if (isRequestInProgress) return console.error("Request in progress");
+    const fetchData = { method: 'PUT', uri: `/api/snapshots/config` };
+    fetchData.key = `${fetchData.uri}:${fetchData.method}`;
 
-    setIsRequestInProgress(true);
+    const isRequestInProgress = requestsInProgress[fetchData.key];
+    if (isRequestInProgress) return console.error("Request in progress", fetchData);
+    setRequestsInProgress(cur => ({ ...cur, [fetchData.key]: true }));
 
-    await fetch(getUri('/api/snapshots/config'), { method: 'PUT', body: JSON.stringify(newConfig), headers: { Pass: sessionStorage.pass } })
+    await fetch(getUri(fetchData.uri), { method: fetchData.method, body: JSON.stringify(newConfig), headers: { Pass: sessionStorage.pass } })
       .then(res => {
         if (!res.ok) throw new Error("Response is not OK");
         return res.json();
       })
       .then(json => setConfig(json))
       .catch(e => console.error(e))
-      .finally(() => setIsRequestInProgress(false));
+      .finally(() => setRequestsInProgress(cur => ({ ...cur, [fetchData.key]: false })));
   }
   
   const getImageRef = useFreshRef(getImage);
@@ -247,33 +260,6 @@ const ImageViewer = () => {
         />
       );
     }
-
-    const { lastRead } = config;
-    let lastReadContentColor = '#aaa';
-    const lastReadDate = new Date(`${lastRead}Z`);
-    if (lastRead && lastReadDate) {
-      const now = new Date();
-      const diff = Math.abs(now - lastReadDate);
-      const lastReadTooLong = diff > 15000;
-      if (lastReadTooLong) {
-        lastReadContentColor = '#f00';
-      }
-    }
-
-    let lastReadContent = null;
-    if (lastRead) {
-      lastReadContent = (
-        <a
-          data-cy="lastRead"
-          href={getUri('/api/server/log')}
-          rel='noreferrer'
-          style={{ color: lastReadContentColor }}
-          target="_blank"
-        >
-          {`Last read: ${lastRead}`}
-        </a>
-      );
-    }
     
     middle = (
       <div style={{ width: imgWidth, height: imgHeight }}>
@@ -301,16 +287,7 @@ const ImageViewer = () => {
         {pauseStateButton}
         {deleteButton}
 
-        <div
-          data-cy="lastReadContainer"
-          style={{
-            color: lastReadContentColor,
-            position: 'relative',
-            top: isAuthenticated ? '-3em' : '-1em',
-          }}
-        >
-          {lastReadContent}
-        </div>
+        <LastReadContainer config={config} isAuthenticated={isAuthenticated} />
       </div>
     );
   } else {
