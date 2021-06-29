@@ -39,23 +39,41 @@ describe('Landing page (local)', () => {
     });
   });
 
-  describe('base state with recent lastRead', () => {
-    beforeEach(() => {
-      const lastRead = getLastReadFormat();
-
-      snapshotMocks.getSnapshotsConfig({ body: { lastRead } });
+  describe('lastRead styling', () => {
+    describe('recent lastRead', () => {
+      beforeEach(() => {
+        const lastRead = getLastReadFormat();
+  
+        snapshotMocks.getSnapshotsConfig({ body: { lastRead } });
+      });
+  
+      it('lastRead text is not red', () => {
+        cy.visit('/');
+  
+        cy.get('[data-cy="lastRead"]')
+          .should('exist')
+          .and('not.have.css', 'color', 'rgb(255, 0, 0)');
+      });
     });
-
-    it('lastRead text is not red', () => {
-      cy.visit('/');
-
-      cy.get('[data-cy="lastRead"]')
-        .should('exist')
-        .and('not.have.css', 'color', 'rgb(255, 0, 0)');
+  
+    describe('outdated lastRead', () => {
+      beforeEach(() => {
+        const lastRead = getLastReadFormat(new Date('2000-01-01 05:00:00'));
+  
+        snapshotMocks.getSnapshotsConfig({ body: { lastRead } });
+      });
+  
+      it('lastRead text is red', () => {
+        cy.visit('/');
+  
+        cy.get('[data-cy="lastRead"]')
+          .should('exist')
+          .and('have.css', 'color', 'rgb(255, 0, 0)');
+      });
     });
   });
 
-  describe('base unauthenticated state with isPaused permutations', () => {
+  describe('unauthenticated with isPaused permutations', () => {
     it('isPaused is false and no indicator appears', () => {
       snapshotMocks.getSnapshot({ headers: { 'X-Authenticated': '' } });
       snapshotMocks.getSnapshotsConfig({ body: { isPaused: false } });
@@ -83,7 +101,7 @@ describe('Landing page (local)', () => {
     });
   });
 
-  describe('base authenticated state with isPaused permutations', () => {
+  describe('authenticated with isPaused permutations', () => {
     it('isPaused is false and play button appears', () => {
       snapshotMocks.getSnapshot({ headers: { 'X-Authenticated': 'true' } });
       snapshotMocks.getSnapshotsConfig({ body: { isPaused: false } });
