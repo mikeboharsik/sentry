@@ -254,8 +254,13 @@ const ImageViewer = () => {
       pauseStateButton = (
         <PauseStateButtonComp
           {...pauseStateButtonProps}
-          onClick={() => {
+          onClick={(evt) => {
             updateConfig({ ...config, isPaused: !isPaused });
+            if (evt.shiftKey) {
+              setTimeout(() => {
+                updateConfig({ ...config, isPaused });
+              }, 15000);
+            }
           }}
         />
       );
