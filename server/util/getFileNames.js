@@ -1,8 +1,21 @@
-const { readdir } = require('fs').promises;
+const { exec } = require('child_process');
 
-async function getFileNames(path) {
-  return await readdir(path)
-    .then(files => files.sort((a, b) => a < b ? 1 : a > b ? -1 : 0));
+function getFileNames(path) {
+  return new Promise((res, rej) => {
+    const command = `find ${path} | grep 'jpg' | sort -r`;
+
+    exec(
+      command, 
+      (err, stdout, stderr) => {
+        if (err) return rej(err);
+        if (stderr) return rej(stderr);
+
+        const filenames = stdout.toString().split('\n');
+
+        return res(filenames);
+      }
+    );
+  });
 }
 
 module.exports = { getFileNames };

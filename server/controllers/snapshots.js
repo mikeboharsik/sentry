@@ -32,9 +32,10 @@ const getSnapshot = {
     const json = contentType === 'application/json';
     const relevantPath = PATH_SNAPSHOTS;
 
-    const fileName = (await getFileNames(relevantPath))[idx];
+    const fileNames = await getFileNames(relevantPath);
+    const fileName = fileNames[idx];
     
-    const filePath = `${relevantPath}/${fileName}`;
+    const filePath = fileName;
 
     if (json) {
       const data = await readFile(filePath, { encoding: 'base64' });
@@ -44,6 +45,7 @@ const getSnapshot = {
         name: fileName,
       });
   
+      res.set('X-Max-Index', fileNames.length);
       res.set('Content-Type', 'application/json');
       res.send(info);
     } else {
