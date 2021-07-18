@@ -1,6 +1,7 @@
 [CmdletBinding()]
 Param(
   [string] $Hostname = "sentry.myfiosgateway.com",
+  [int]    $SshPort = 22,
   [switch] $SkipBuild,
   [switch] $SkipUpload,
   [switch] $KeepStagingFolder
@@ -22,6 +23,7 @@ try {
 
   if (!$SkipBuild) {
     Push-Location "$PSScriptRoot\client"
+    yarn
     yarn build
     Pop-Location
   }
@@ -36,9 +38,9 @@ try {
 
     Get-ChildItem
 
-    ssh "pi@$Hostname" "mkdir sentry"
-    scp -r * "scp://pi@$Hostname/sentry"
-    ssh "pi@$Hostname" "cd sentry; chmod +x ./init.sh;"
+    ssh "pi@$Hostname" -p $SshPort "mkdir sentry"
+    scp -r -P $SshPort * "scp://pi@$Hostname/sentry"
+    ssh "pi@$Hostname" -p $SshPort "cd sentry; chmod +x ./init.sh;"
     
     Pop-Location
   } else {
