@@ -20,21 +20,21 @@ import './commands'
 // require('./commands')
 
 Cypress.on('test:before:run', () => {
-  /*
-  Cypress.automation('remote:debugger:protocol', {
-    command: 'Emulation.setLocaleOverride',
-    params: {
-      locale: 'en-US'
-    }
-  });
-  */
+	/*
+	Cypress.automation('remote:debugger:protocol', {
+		command: 'Emulation.setLocaleOverride',
+		params: {
+			locale: 'en-US'
+		}
+	});
+	*/
 
-  // https://github.com/cypress-io/cypress/issues/7890#issuecomment-655174901
-  // This is necessary to ensure that tests don't fail if a user in a different timezone runs them
-  Cypress.automation('remote:debugger:protocol', {
-    command: "Emulation.setTimezoneOverride",
-    params: {
-      timezoneId: "America/New_York",
-    }
-  });
+	// https://github.com/cypress-io/cypress/issues/7890#issuecomment-655174901
+	// This is necessary to ensure that tests don't fail if a user in a different timezone runs them
+	Cypress.automation('remote:debugger:protocol', {
+		command: "Emulation.setTimezoneOverride",
+		params: {
+			timezoneId: "America/New_York",
+		}
+	});
 });

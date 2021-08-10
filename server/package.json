@@ -1,23 +1,23 @@
 {
-  "name": "server",
-  "version": "1.0.0",
-  "main": "index.js",
-  "license": "MIT",
-  "engines": {
-    "node": ">=14.16.1"
-  },
-  "dependencies": {
-    "@boost/log": "^2.2.5",
-    "cron": "^1.8.2",
-    "express": "^4.17.1",
-    "socket.io": "^3.0.5",
-    "uuid": "^8.3.2"
-  },
-  "devDependencies": {
-    "pkg": "^4.4.9"
-  },
-  "scripts": {
-    "build-linux": "pkg index.js --target node10-linux-armv6 --output bin-linux/server",
-    "build-win": "pkg index.js --target win --output bin-win/server.exe"
-  }
+	"name": "server",
+	"version": "1.0.0",
+	"main": "index.js",
+	"license": "MIT",
+	"engines": {
+		"node": ">=14.16.1"
+	},
+	"dependencies": {
+		"@boost/log": "^2.2.5",
+		"cron": "^1.8.2",
+		"express": "^4.17.1",
+		"socket.io": "^3.0.5",
+		"uuid": "^8.3.2"
+	},
+	"devDependencies": {
+		"pkg": "^4.4.9"
+	},
+	"scripts": {
+		"build-linux": "pkg index.js --target node10-linux-armv6 --output bin-linux/server",
+		"build-win": "pkg index.js --target win --output bin-win/server.exe"
+	}
 }
