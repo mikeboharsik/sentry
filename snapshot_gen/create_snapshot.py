@@ -6,6 +6,16 @@ import shutil
 import time
 import traceback
 
+class MockFrame:
+	def seek(self, pos):
+		return
+
+	def truncate(self):
+		return
+
+	def read(self):
+		return []
+
 class PiCameraMock:
 	class MockMock:
 		def __init__(self):
@@ -20,16 +30,30 @@ class PiCameraMock:
 		def stop_preview(self):
 			return
 		def capture_continuous(self, stream, format, resize, quality, use_video_port, burst):
-			return []
+			return [MockFrame()]
 
 	def PiCamera(self):
 		return self.MockMock()
 
+class NumpyMock:
+	def __init__(self):
+		self.uint8 = "uint8"
+
+	def asarray(self, bytes, type):
+		return []
+
+class CVMock:
+	def __init__(self):
+		self.IMREAD_COLOR = "IMREAD_COLOR"
+
+	def imdecode(self, bytes, format):
+		return bytearray([])
+
 if sys.argv.index('mock') >= 0:
 	isMocked = True
 
-	cv2 = {}
-	numpy = {}
+	cv2 = CVMock()
+	numpy = NumpyMock()
 	picamera = PiCameraMock()
 else:
 	import cv2
@@ -143,8 +167,9 @@ def snapshots(pathSnapshots, camera, continuous = False, name = "temp", baseSum 
 				else:
 					final = f"./{imgname}"
 				
-				with open(final, 'wb') as f:
-					f.write(streambytes)
+				if not isMocked:
+					with open(final, 'wb') as f:
+						f.write(streambytes)
 				
 				log(f"Saved snapshot {final!r} with a difference of {percent}")
 				
@@ -261,4 +286,4 @@ finally:
 
 	if isMocked:
 		os.remove("./mock/config.json")
-		os.rmdir("./mock/snapshots")
+		shutil.rmtree("./mock/snapshots")
