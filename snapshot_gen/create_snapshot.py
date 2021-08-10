@@ -1,20 +1,49 @@
-import cv2
+import sys, os
 import datetime
 import io
 import json
-import numpy
-import os
-import picamera
 import shutil
-import sys
 import time
 import traceback
+
+class PiCameraMock:
+	class MockMock:
+		def __init__(self):
+			self.awb_gains = {}
+		def __enter__(self):
+			return self
+		def __exit__(self, type, val, tb):
+			return
+
+		def start_preview(self):
+			return
+		def stop_preview(self):
+			return
+		def capture_continuous(self, stream, format, resize, quality, use_video_port, burst):
+			return []
+
+	def PiCamera(self):
+		return self.MockMock()
+
+if sys.argv.index('mock') >= 0:
+	isMocked = True
+
+	cv2 = {}
+	numpy = {}
+	picamera = PiCameraMock()
+else:
+	import cv2
+	import numpy
+	import picamera
 
 # local
 import config
 from log import log
 
-pathConfig = '../config.json'
+if isMocked:
+	pathConfig = './mock/config.json'
+else:
+	pathConfig = '../config.json'
 
 lastRequestProcessingTime = None
 
@@ -24,29 +53,15 @@ def processArguments():
 	rapid = False
 	updateBase = False
 
-	try:
-		if sys.argv.index('cont') >= 0:
+	for idx, arg in enumerate(sys.argv):
+		if arg == 'cont':
 			continuous = True
-	except:
-		pass
-
-	try:
-		if sys.argv.index('rapid') >= 0:
+		elif arg == 'rapid':
 			rapid = True
-	except:
-		pass
-
-	try:
-		if sys.argv.index('base') >= 0:
+		elif arg == 'base':
 			updateBase = True
-	except:
-		pass
-
-	try:
-		if sys.argv.index('burst') >= 0:
+		elif arg == 'burst':
 			burst = True
-	except:
-		pass
 
 	return {
 		'burst': burst,
@@ -148,7 +163,7 @@ def main():
 	configuration = {}
 	arguments = {}
 
-	config.seed(pathConfig)
+	config.seed(pathConfig, isMocked)
 	configuration = config.process(pathConfig)
 
 	pathBase = configuration['pathBase']
@@ -173,8 +188,6 @@ def main():
 
 		with picamera.PiCamera() as camera:
 			log("Camera initalized")
-
-			return 1
 
 			try:
 				cameraSettings = config.get(pathConfig, ['cameraSettings'])
@@ -204,7 +217,7 @@ def main():
 				camera.start_preview()
 
 				if (baseImageMissing):
-					snapshots(camera, name = "base")
+					snapshots(pathSnapshots, camera, name = "base", arguments = arguments, configuration = configuration)
 					shutil.copyfile(pathBase, f"{pathSnapshots}/{currentTimeFileName()}")
 					log(f"Initiated base image and copied into '{pathSnapshots}'")
 				
@@ -245,3 +258,7 @@ try:
 	main()
 finally:
 	log("========== Shutting down ==========")
+
+	if isMocked:
+		os.remove("./mock/config.json")
+		os.rmdir("./mock/snapshots")

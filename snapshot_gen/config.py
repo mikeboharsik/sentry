@@ -59,7 +59,7 @@ defaultConfig = {
 	'width': defaultWidth,
 }
 
-def seed(pathConfig):
+def seed(pathConfig, isMocked = False):
 	try:
 		with open(pathConfig) as f:
 			try:
@@ -71,7 +71,14 @@ def seed(pathConfig):
 				raise FileNotFoundError
 	except FileNotFoundError:
 		with open(pathConfig, 'w') as f:
-			fileContent = json.dumps(defaultConfig, indent = 2, sort_keys = True)
+			if isMocked:
+				defaultConfig['pathBase'] = './mock/static/base.jpg'
+				defaultConfig['pathSnapshots'] = './mock/snapshots'
+
+				fileContent = json.dumps(defaultConfig, indent = 2, sort_keys = True)
+			else:
+				fileContent = json.dumps(defaultConfig, indent = 2, sort_keys = True)
+
 			f.write(fileContent)
 
 			log(f"Seeded '{pathConfig} with default settings")
