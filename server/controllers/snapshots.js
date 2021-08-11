@@ -1,7 +1,7 @@
 const path = require('path');
 const { mkdir, readdir, readFile, rename, writeFile } = require('fs').promises;
 
-const { PATH_BASE, PATH_CONFIG, PATH_GRAVEYARD, PATH_SNAPSHOTS, PATH_SNAPSHOTS_LOG } = require('../util/consts');
+const { PATH_BASE_IMAGE, PATH_CONFIG, PATH_GRAVEYARD, PATH_SNAPSHOTS, PATH_SNAPSHOTS_LOG } = require('../util/consts');
 const { getFileNames } = require('../util/getFileNames');
 const { log } = require('../util/logger');
 
@@ -9,7 +9,7 @@ const getBase = {
 	method: 'get',
 	pattern: '/api/snapshots/base',
 	handler: (req, res) => {
-		res.sendFile(path.join(PATH_BASE));
+		res.sendFile(path.join(PATH_BASE_IMAGE));
 	},
 };
 

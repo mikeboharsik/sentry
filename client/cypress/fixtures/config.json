@@ -26,7 +26,7 @@
 	"lastRequestProcessingTime": 0,
 	"outputHeight": 756,
 	"outputWidth": 768,
-	"pathBase": "./base.jpg",
+	"dirBaseImage": "./base.jpg",
 	"pathSnapshots": "../../snapshots",
 	"quality": 100,
 	"requestProcessingIntervalSeconds": 5,

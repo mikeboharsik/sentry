@@ -1,4 +1,9 @@
+import cv2
+import numpy
+import picamera
+
 import sys, os
+import pathlib
 import datetime
 import io
 import json
@@ -6,68 +11,11 @@ import shutil
 import time
 import traceback
 
-class MockFrame:
-	def seek(self, pos):
-		return
+from scripts.config import ConfigManager
+from scripts.log import LogManager
 
-	def truncate(self):
-		return
-
-	def read(self):
-		return []
-
-class PiCameraMock:
-	class MockMock:
-		def __init__(self):
-			self.awb_gains = {}
-		def __enter__(self):
-			return self
-		def __exit__(self, type, val, tb):
-			return
-
-		def start_preview(self):
-			return
-		def stop_preview(self):
-			return
-		def capture_continuous(self, stream, format, resize, quality, use_video_port, burst):
-			return [MockFrame()]
-
-	def PiCamera(self):
-		return self.MockMock()
-
-class NumpyMock:
-	def __init__(self):
-		self.uint8 = "uint8"
-
-	def asarray(self, bytes, type):
-		return []
-
-class CVMock:
-	def __init__(self):
-		self.IMREAD_COLOR = "IMREAD_COLOR"
-
-	def imdecode(self, bytes, format):
-		return bytearray([])
-
-if sys.argv.index('mock') >= 0:
-	isMocked = True
-
-	cv2 = CVMock()
-	numpy = NumpyMock()
-	picamera = PiCameraMock()
-else:
-	import cv2
-	import numpy
-	import picamera
-
-# local
-import config
-from log import log
-
-if isMocked:
-	pathConfig = './mock/config.json'
-else:
-	pathConfig = '../config.json'
+logManager = LogManager('/home/pi/temp/sentry/log')
+log = logManager.log
 
 lastRequestProcessingTime = None
 
@@ -108,7 +56,9 @@ def imgsum(img, config):
 						
 	return sum
 
-def benchmark(func, desc = None):
+def benchmark(func, desc = None, configManager = None):
+	log = configManager.log
+
 	t1 = datetime.datetime.utcnow()
 	func()	
 	t2 = datetime.datetime.utcnow()
@@ -122,17 +72,19 @@ def benchmark(func, desc = None):
 def currentTimeFileName():
 	return datetime.datetime.utcnow().strftime('%Y-%m-%dZ%H-%M-%S-%f.jpg')
 
-def snapshots(pathSnapshots, camera, continuous = False, name = "temp", baseSum = -1, arguments = {}, configuration = {}):
+def snapshots(pathSnapshots, camera, continuous = False, name = "temp", baseSum = -1, arguments = {}, configuration = {}, configManager = None):
+	log = configManager.log
+
 	burst = arguments['burst']
 	continuous = arguments['continuous']
 	rapid = arguments['rapid']
 
 	outSize = (configuration['outputWidth'], configuration['outputHeight'])
+	pathBaseImage = configuration['pathBaseImage']
 	pathSnapshots = configuration['pathSnapshots']
 	quality = configuration['quality']
 	tolerance = configuration['tolerance']
 
-	capture_start = datetime.datetime.utcnow()
 	stream = io.BytesIO()
 
 	for frame in camera.capture_continuous(stream, format='jpeg', resize = outSize, quality = quality, use_video_port = rapid, burst = burst):
@@ -144,14 +96,10 @@ def snapshots(pathSnapshots, camera, continuous = False, name = "temp", baseSum 
 			frame.seek(0)
 			streambytes = frame.read()
 			frame.seek(0)
-			
-			capture_end = datetime.datetime.utcnow()
-			
-			sum_start = datetime.datetime.utcnow()
+
 			bytes = numpy.asarray(bytearray(streambytes), numpy.uint8)
 			img = cv2.imdecode(bytes, cv2.IMREAD_COLOR)
 			sum = imgsum(img, configuration)
-			sum_end = datetime.datetime.utcnow()
 			
 			diff = abs(baseSum - sum)
 			percent = diff / baseSum
@@ -160,46 +108,45 @@ def snapshots(pathSnapshots, camera, continuous = False, name = "temp", baseSum 
 			frame.truncate()		
 			
 			if not continuous or save:
-				imgname = f"{name}.jpg"
-				
 				if name == "temp":
 					final = f"{pathSnapshots}/{currentTimeFileName()}"
 				else:
-					final = f"./{imgname}"
+					final = pathBaseImage
 				
-				if not isMocked:
-					with open(final, 'wb') as f:
-						f.write(streambytes)
+				with open(final, 'wb') as f:
+					f.write(streambytes)
 				
 				log(f"Saved snapshot {final!r} with a difference of {percent}")
 				
 				if not save:
 					break
 		
-		configuration = config.process(pathConfig, streambytes)
+		configuration = configManager.process(streambytes)
 		if configuration['requests']['reinitialize']:
 			break
-
-		capture_start = capture_end = datetime.datetime.utcnow()
 				
-def main():
+def main(dirRoot = '/home/pi/temp/sentry', skipSleep = False, overrides = {}):
+	logManager = LogManager(dirRoot)
+	log = logManager.log
+
 	log("==========	Starting up	==========")
+
+	configManager = ConfigManager(dirRoot, logManager, overrides = overrides)
 
 	configuration = {}
 	arguments = {}
 
-	config.seed(pathConfig, isMocked)
-	configuration = config.process(pathConfig)
+	configuration = configManager.process()
 
-	pathBase = configuration['pathBase']
+	pathBaseImage = configuration['pathBaseImage']
 	pathSnapshots = configuration['pathSnapshots']
 
 	if (not os.path.isdir(pathSnapshots)):
-		os.mkdir(pathSnapshots)
+		pathlib.Path(pathSnapshots).mkdir(parents = True, exist_ok = True)
 		log(f"Created '{pathSnapshots}'")
 
 	baseImageMissing = False
-	if (not os.path.isfile(pathBase)):
+	if (not os.path.isfile(pathBaseImage)):
 		baseImageMissing = True
 
 	arguments = processArguments()
@@ -207,7 +154,7 @@ def main():
 	reinitialize = True
 
 	while reinitialize:
-		reinitialize = config.set(pathConfig, ['requests', 'reinitialize', False])
+		reinitialize = configManager.set(['requests', 'reinitialize', False])
 
 		log("Initializing camera...")
 
@@ -215,7 +162,7 @@ def main():
 			log("Camera initalized")
 
 			try:
-				cameraSettings = config.get(pathConfig, ['cameraSettings'])
+				cameraSettings = configManager.get(['cameraSettings'])
 				log(f"Initializing camera settings from {cameraSettings}")
 
 				awbMode = cameraSettings['awbMode']
@@ -232,7 +179,11 @@ def main():
 				camera.crop = crop
 				camera.framerate = framerate
 				camera.iso = iso
-				time.sleep(2)
+
+				if not skipSleep:
+					log("Sleeping 2 seconds")
+					time.sleep(2)
+
 				camera.shutter_speed = shutterSpeed
 				camera.exposure_mode = exposureMode
 				g = camera.awb_gains
@@ -241,49 +192,48 @@ def main():
 
 				camera.start_preview()
 
+				log("Started camera preview")
+
 				if (baseImageMissing):
-					snapshots(pathSnapshots, camera, name = "base", arguments = arguments, configuration = configuration)
-					shutil.copyfile(pathBase, f"{pathSnapshots}/{currentTimeFileName()}")
+					log("Base image missing")
+					snapshots(pathSnapshots, camera, name = "base", arguments = arguments, configuration = configuration, configManager = configManager)
+					shutil.copyfile(pathBaseImage, f"{pathSnapshots}/{currentTimeFileName()}")
 					log(f"Initiated base image and copied into '{pathSnapshots}'")
 				
 				try:
-					baseSum = imgsum(cv2.imread(pathBase, cv2.IMREAD_COLOR), configuration)
+					baseSum = imgsum(cv2.imread(pathBaseImage, cv2.IMREAD_COLOR), configuration)
 				except:
-					baseSum = -1
+					log("Failed to get baseSum")
+					baseSum = 0
 
 				if baseSum != configuration['baseSum']:
 					log(F"Updating baseSum config value to {baseSum}")
-					config.set(pathConfig, ['baseSum', int(baseSum)])
+					configManager.set(['baseSum', int(baseSum)])
 				
 				continuous = arguments['continuous']
 				updateBase = arguments['updateBase']
 
 				if continuous:
 					log("Entering snapshot loop")
-					snapshots(pathSnapshots, camera, True, baseSum = baseSum, configuration = configuration, arguments = arguments)
+					snapshots(pathSnapshots, camera, True, baseSum = baseSum, configuration = configuration, arguments = arguments, configManager = configManager)
 
-					configuration = config.process(pathConfig)
-					if config.get(pathConfig, ['requests', 'reinitialize']):
+					configuration = configManager.process()
+					if configManager.get(['requests', 'reinitialize']):
 						reinitialize = True
 				else:
 					if updateBase:
-						benchmark(lambda: snapshots(pathSnapshots, camera, name = "base", configuration = configuration, arguments = arguments))
+						benchmark(lambda: snapshots(pathSnapshots, camera, name = "base", configuration = configuration, arguments = arguments, configManager = configManager), configManager = configManager)
 					else:
-						benchmark(lambda: snapshots(pathSnapshots, camera, configuration = configuration, arguments = arguments))
+						benchmark(lambda: snapshots(pathSnapshots, camera, configuration = configuration, arguments = arguments, configManager = configManager), configManager = configManager)
 			
 			except:
-				log(f"Exception info 1: {sys.exc_info()[0]}")
-				log(f"Exception info 2: {sys.exc_info()[1]}")
-				log(f"Exception traceback: {traceback.print_tb(sys.exc_info()[2])}")
+				log(f"\nException info 1: {sys.exc_info()[0]}\nException info 2: {sys.exc_info()[1]}\nException traceback: {traceback.print_tb(sys.exc_info()[2])}")
 				
 			finally:
 				camera.stop_preview()
 
-try:
-	main()
-finally:
-	log("========== Shutting down ==========")
-
-	if isMocked:
-		os.remove("./mock/config.json")
-		shutil.rmtree("./mock/snapshots")
+if __name__ == "__main__":
+	try:
+		main()
+	finally:
+		log("========== Shutting down ==========")
