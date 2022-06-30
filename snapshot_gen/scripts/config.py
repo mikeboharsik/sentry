@@ -52,7 +52,7 @@ class ConfigManager:
 		defaultHeight = defaultRes[1]
 		defaultWidth = defaultRes[0]
 
-		defaultBaseSum = 0
+		defaultBaseSum = -1
 		defaultDecimationX = 8
 		defaultDecimationY = 8
 		defaultQuality = 100

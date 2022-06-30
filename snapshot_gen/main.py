@@ -72,7 +72,7 @@ def benchmark(func, desc = None, configManager = None):
 def currentTimeFileName():
 	return datetime.datetime.utcnow().strftime('%Y-%m-%dZ%H-%M-%S-%f.jpg')
 
-def snapshots(pathSnapshots, camera, continuous = False, name = "temp", baseSum = -1, arguments = {}, configuration = {}, configManager = None):
+def snapshots(pathSnapshots, camera, continuous = False, name = "temp", arguments = {}, configuration = {}, configManager = None):
 	log = configManager.log
 
 	burst = arguments['burst']
@@ -84,6 +84,8 @@ def snapshots(pathSnapshots, camera, continuous = False, name = "temp", baseSum 
 	pathSnapshots = configuration['pathSnapshots']
 	quality = configuration['quality']
 	tolerance = configuration['tolerance']
+
+	baseSum = configManager.get(['baseSum'])
 
 	stream = io.BytesIO()
 
@@ -105,6 +107,8 @@ def snapshots(pathSnapshots, camera, continuous = False, name = "temp", baseSum 
 			percent = diff / baseSum
 			save = percent > tolerance
 			
+			log(f"baseSum {baseSum}, sum {sum}, percent {percent}, tolerance {tolerance}, save {save}")
+
 			frame.truncate()		
 			
 			if not continuous or save:
@@ -124,6 +128,10 @@ def snapshots(pathSnapshots, camera, continuous = False, name = "temp", baseSum 
 		configuration = configManager.process(streambytes)
 		if configuration['requests']['reinitialize']:
 			break
+
+	return {
+		'lastSum': sum
+	}
 				
 def main(dirRoot = '/home/pi/temp/sentry', skipSleep = False, overrides = {}):
 	logManager = LogManager(dirRoot)
@@ -196,15 +204,17 @@ def main(dirRoot = '/home/pi/temp/sentry', skipSleep = False, overrides = {}):
 
 				if (baseImageMissing):
 					log("Base image missing")
-					snapshots(pathSnapshots, camera, name = "base", arguments = arguments, configuration = configuration, configManager = configManager)
+					res = snapshots(pathSnapshots, camera, name = "base", arguments = arguments, configuration = configuration, configManager = configManager)
+					lastSum = int(res['lastSum'])
+					configManager.set(['baseSum', lastSum])
 					shutil.copyfile(pathBaseImage, f"{pathSnapshots}/{currentTimeFileName()}")
-					log(f"Initiated base image and copied into '{pathSnapshots}'")
+					log(f"Initiated base image and copied into '{pathSnapshots}' with '{lastSum}'")
 				
 				try:
 					baseSum = imgsum(cv2.imread(pathBaseImage, cv2.IMREAD_COLOR), configuration)
 				except:
 					log("Failed to get baseSum")
-					baseSum = 0
+					baseSum = -1
 
 				if baseSum != configuration['baseSum']:
 					log(F"Updating baseSum config value to {baseSum}")

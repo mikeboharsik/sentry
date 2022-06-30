@@ -1,6 +1,6 @@
 [CmdletBinding()]
 Param(
-	[string] $Hostname = "sentry.myfiosgateway.com",
+	[string] $Hostname = "sentry",
 	[int]		$SshPort = 22,
 	[switch] $SkipBuild,
 	[switch] $SkipUpload,
